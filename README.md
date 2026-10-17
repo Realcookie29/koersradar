@@ -33,8 +33,22 @@ De gebruiksvoorwaarden van de databronnen staan in [`docs/data-voorwaarden.md`](
 |---|---|---|
 | 0 | Repo, CI, schema met RLS, Next.js met invite-login | ✅ klaar (Supabase-project nog aanmaken) |
 | 1 | Data-ingest crypto (Binance + Coinbase-fallback), AEX (yfinance), kwaliteitscheck, gap-herstel | ✅ kern klaar en getest tegen live data |
-| 2 | Dashboard: grafiek (candles, volume, EMA, RSI), versheidsbadge | 🟡 grafiek en badges klaar, watchlist-UI nog niet |
-| 3–6 | Signal engine, backtest, paper trading, AI-uitleg, evaluatie | ⏳ |
+| 2 | Portaal: scanner, markten, grafiek met signaalniveaus, signalenlog | ✅ (watchlist-UI nog niet) |
+| 3 | Signal engine (trend-pullback, long) + scanner + "Scan nu" | ✅ engine; ⏳ backtest |
+| 5 | AI-uitleg (Claude Haiku) met getallencontrole | ✅ gebouwd, vult `ANTHROPIC_API_KEY` in om aan te zetten |
+| 4, 6 | Paper trading, evaluatie | ⏳ |
+
+### Hoe de scanner werkt
+1. Elke 15 minuten (en bij **Scan nu** in het portaal) haalt de worker verse candles op.
+2. Per instrument en interval controleert hij of de data vers en compleet is. Zo niet, dan volgt `NO_TRADE`.
+3. De strategie `trend-pullback-0.1` (`worker/koersradar/strategies/trend_pullback.py`) kijkt naar
+   trend (EMA 50/200), pullback en keerpunt (RSI 14), volume, en stop/doel (ATR 14, 2R).
+   Daarna rekent hij de R/R **na kosten** uit.
+4. Is er een kans, dan schrijft Claude een korte uitleg. Een uitleg met een getal dat niet uit de
+   berekening komt, wordt afgewezen (`worker/koersradar/explain/number_check.py`).
+5. Alles wordt gelogd in `signals`, ook *geen trade*, zodat we achteraf kunnen evalueren.
+
+⚠️ De strategie is **nog niet gebacktest**. Behandel signalen als ongetest tot fase 3 af is.
 
 ## Lokaal starten
 
@@ -50,15 +64,16 @@ cp web/.env.example web/.env.local
 # 2. Database + Auth lokaal (geeft URL en keys terug)
 supabase init                     # alleen de allereerste keer; commit supabase/config.toml
 supabase start
-supabase db reset                 # past supabase/migrations/ toe
+supabase db reset                 # past supabase/migrations/ toe (of plak ze op volgorde in de SQL Editor)
 
 # 3. Worker
 cd worker
 uv venv && uv pip install -e ".[dev,aex]"     # of: python -m venv .venv && .venv/bin/pip install -e ".[dev,aex]"
 uv run pytest
 uv run python -m koersradar.ingest.backfill --days 30   # alleen Parquet, geen DB nodig
-uv run python -m koersradar.ingest.run                  # één ronde naar de database
-uv run python -m koersradar.ingest.scheduler            # elke 15 minuten
+uv run python -m koersradar.ingest.run --days 45        # eerste keer: 45 dagen historie (nodig voor EMA 200 op 1h)
+uv run python -m koersradar.scanner.run                 # één scan
+uv run python -m koersradar.ingest.scheduler            # elke 15 min ingest+scan, plus 'Scan nu'-aanvragen
 
 # 4. Web
 cd ../web

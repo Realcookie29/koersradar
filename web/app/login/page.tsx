@@ -55,14 +55,17 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-6 p-6">
-      <h1 className="text-2xl font-semibold">Koersradar</h1>
+    <main className="mx-auto flex min-h-screen w-full max-w-sm flex-col justify-center gap-6 p-6">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Koersradar</h1>
+        <p className="mt-1 text-sm text-muted">Daytrade-scanner voor de groep. Alleen op uitnodiging.</p>
+      </div>
       {state === "sent" ? (
         <p>Check je mail voor de inloglink.</p>
       ) : (
         <form onSubmit={onSubmit} className="flex flex-col gap-3">
-          <label className="text-sm" htmlFor="email">
-            E-mailadres (alleen op uitnodiging)
+          <label className="text-sm text-muted" htmlFor="email">
+            E-mailadres
           </label>
           <input
             id="email"
@@ -70,16 +73,16 @@ export default function LoginPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="rounded border border-neutral-400 bg-transparent px-3 py-2"
+            className="rounded-lg border border-line bg-panel px-3 py-2 outline-none focus:border-accent"
           />
           <button
             type="submit"
             disabled={state === "sending"}
-            className="rounded bg-neutral-900 px-3 py-2 text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
+            className="rounded-lg bg-accent px-3 py-2 font-medium text-white transition hover:brightness-110 disabled:opacity-50"
           >
             {state === "sending" ? "Versturen…" : "Stuur inloglink"}
           </button>
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-down">{error}</p>}
         </form>
       )}
     </main>

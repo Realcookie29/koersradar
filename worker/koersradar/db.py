@@ -106,3 +106,77 @@ def prune(conn: psycopg.Connection, now: datetime) -> None:
                 "delete from public.candles where interval=%s and open_time < %s",
                 (interval, now - keep),
             )
+
+
+def data_status_source(conn: psycopg.Connection, instrument_id: int, interval: str) -> str | None:
+    """Bron waarmee de laatste data binnenkwam (kan de fallback zijn)."""
+    with conn.cursor() as cur:
+        cur.execute(
+            "select source from public.data_status where instrument_id=%s and interval=%s",
+            (instrument_id, interval),
+        )
+        row = cur.fetchone()
+    return row[0] if row else None
+
+
+def create_scan_run(conn: psycopg.Connection, trigger: str) -> int:
+    with conn.cursor() as cur:
+        cur.execute(
+            "insert into public.scan_runs (trigger, requested_by) values (%s, null) returning id",
+            (trigger,),
+        )
+        row = cur.fetchone()
+    assert row is not None
+    return int(row[0])
+
+
+def claim_pending_manual_run(conn: psycopg.Connection) -> int | None:
+    """Pak de oudste openstaande handmatige aanvraag; dubbele aanvragen vallen samen."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """select id from public.scan_runs where status='pending'
+               order by requested_at limit 1 for update skip locked"""
+        )
+        row = cur.fetchone()
+        if not row:
+            return None
+        cur.execute(
+            """update public.scan_runs set status='done', finished_at=now(),
+               error='samengevoegd met run ' || %s
+               where status='pending' and id <> %s""",
+            (row[0], row[0]),
+        )
+    return int(row[0])
+
+
+def start_scan_run(conn: psycopg.Connection, run_id: int) -> None:
+    with conn.cursor() as cur:
+        cur.execute(
+            "update public.scan_runs set status='running', started_at=now() where id=%s",
+            (run_id,),
+        )
+
+
+def finish_scan_run(
+    conn: psycopg.Connection,
+    run_id: int,
+    scanned: int | None,
+    trades: int | None,
+    error: str | None,
+) -> None:
+    with conn.cursor() as cur:
+        cur.execute(
+            """update public.scan_runs set status=%s, finished_at=now(),
+               instruments_scanned=%s, trade_count=%s, error=%s where id=%s""",
+            ("error" if error else "done", scanned, trades, error, run_id),
+        )
+
+
+def prune_signals(conn: psycopg.Connection, now: datetime) -> None:
+    """NO_TRADE-records na 14 dagen weg; TRADE-signalen blijven voor evaluatie."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """delete from public.signals where decision='NO_TRADE' and created_at < %s
+               and id not in (select signal_id from public.paper_trades)""",
+            (now - timedelta(days=14),),
+        )

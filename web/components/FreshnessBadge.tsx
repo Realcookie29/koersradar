@@ -9,11 +9,11 @@ const LABEL: Record<DataStatus["status"], string> = {
 };
 
 const COLOR: Record<DataStatus["status"], string> = {
-  ok: "bg-green-100 text-green-900 dark:bg-green-900/40 dark:text-green-200",
-  delayed: "bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200",
-  stale: "bg-red-100 text-red-900 dark:bg-red-900/40 dark:text-red-200",
-  gap: "bg-red-100 text-red-900 dark:bg-red-900/40 dark:text-red-200",
-  error: "bg-red-100 text-red-900 dark:bg-red-900/40 dark:text-red-200",
+  ok: "bg-up/15 text-up",
+  delayed: "bg-warn/15 text-warn",
+  stale: "bg-down/15 text-down",
+  gap: "bg-down/15 text-down",
+  error: "bg-down/15 text-down",
 };
 
 function fmtAge(ms: number): string {
@@ -34,7 +34,7 @@ export function FreshnessBadge({ status, now }: { status?: DataStatus; now: numb
       <span className={`rounded px-2 py-0.5 font-medium ${COLOR[status.status]}`}>
         {LABEL[status.status]}
       </span>
-      <span className="text-neutral-500">
+      <span className="text-muted">
         bron {status.source}
         {last && (
           <>

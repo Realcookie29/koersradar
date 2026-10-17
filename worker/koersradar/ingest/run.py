@@ -37,11 +37,15 @@ def ingest_instrument(
     instrument_id: int,
     interval: str,
     now: datetime,
-    initial_days: int = 7,
+    initial_days: int = 45,
+    force_days: int | None = None,
 ) -> QualityReport:
     step = interval_delta(interval)
     last = db.last_candle_time(conn, instrument_id, interval)
-    since = (last + step) if last else now - timedelta(days=initial_days)
+    if force_days is not None:  # backfill: opnieuw ophalen vanaf N dagen terug (upsert)
+        since = now - timedelta(days=force_days)
+    else:
+        since = (last + step) if last else now - timedelta(days=initial_days)
 
     primary = get_source(ins.source)
     fallback = get_source(ins.fallback) if ins.fallback else None
@@ -72,7 +76,7 @@ def ingest_instrument(
     return rep
 
 
-def ingest_once(now: datetime | None = None) -> dict[str, str]:
+def ingest_once(now: datetime | None = None, force_days: int | None = None) -> dict[str, str]:
     now = now or utcnow()
     instruments = load_instruments()
     results: dict[str, str] = {}
@@ -80,16 +84,24 @@ def ingest_once(now: datetime | None = None) -> dict[str, str]:
         ids = db.ensure_instruments(conn, instruments)
         for ins in instruments:
             for interval in ins.intervals:
-                rep = ingest_instrument(conn, ins, ids[ins.symbol], interval, now)
+                rep = ingest_instrument(
+                    conn, ins, ids[ins.symbol], interval, now, force_days=force_days
+                )
                 conn.commit()
                 results[f"{ins.symbol} {interval}"] = rep.status
                 log.info("%s %s: %s %s", ins.symbol, interval, rep.status, rep.detail or "")
         db.prune(conn, now)
+        db.prune_signals(conn, now)
         conn.commit()
     return results
 
 
 if __name__ == "__main__":
+    import argparse
+
+    ap = argparse.ArgumentParser(description="Eén ingest-ronde naar de database")
+    ap.add_argument("--days", type=int, help="backfill: haal de laatste N dagen opnieuw op")
+    args = ap.parse_args()
     logging.basicConfig(level="INFO", format="%(asctime)s %(levelname)s %(message)s")
-    for key, status in ingest_once().items():
+    for key, status in ingest_once(force_days=args.days).items():
         print(f"{status:8} {key}")

@@ -18,7 +18,9 @@ function line(times: UTCTimestamp[], values: (number | null)[]) {
   return values.flatMap((v, i) => (v === null ? [] : [{ time: times[i], value: v }]));
 }
 
-export function Chart({ candles }: { candles: Candle[] }) {
+type Levels = { entry: number; stop: number; target: number } | null;
+
+export function Chart({ candles, levels = null }: { candles: Candle[]; levels?: Levels }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -28,13 +30,13 @@ export function Chart({ candles }: { candles: Candle[] }) {
       autoSize: true,
       layout: {
         background: { type: ColorType.Solid, color: "transparent" },
-        textColor: dark ? "#d4d4d4" : "#262626",
+        textColor: dark ? "#8a97a8" : "#5b6676",
         // Verplichte TradingView-attributie (Apache-2.0 NOTICE)
         attributionLogo: true,
       },
       grid: {
-        vertLines: { color: dark ? "#262626" : "#f0f0f0" },
-        horzLines: { color: dark ? "#262626" : "#f0f0f0" },
+        vertLines: { color: dark ? "#161e28" : "#eef1f5" },
+        horzLines: { color: dark ? "#161e28" : "#eef1f5" },
       },
       timeScale: { timeVisible: true, secondsVisible: false },
       localization: { locale: "nl-NL" },
@@ -43,18 +45,24 @@ export function Chart({ candles }: { candles: Candle[] }) {
     const times = candles.map((c) => toTime(c.open_time));
     const closes = candles.map((c) => c.close);
 
-    chart
-      .addSeries(CandlestickSeries, {
-        upColor: "#16a34a",
-        downColor: "#dc2626",
-        wickUpColor: "#16a34a",
-        wickDownColor: "#dc2626",
+    const price = chart.addSeries(CandlestickSeries, {
+        upColor: "#22c55e",
+        downColor: "#f05252",
+        wickUpColor: "#22c55e",
+        wickDownColor: "#f05252",
         borderVisible: false,
-      })
-      .setData(candles.map((c, i) => ({ time: times[i], open: c.open, high: c.high, low: c.low, close: c.close })));
+      });
+    price.setData(candles.map((c, i) => ({ time: times[i], open: c.open, high: c.high, low: c.low, close: c.close })));
 
-    chart.addSeries(LineSeries, { color: "#2563eb", lineWidth: 1, title: "EMA 50" }).setData(line(times, ema(closes, 50)));
-    chart.addSeries(LineSeries, { color: "#9333ea", lineWidth: 1, title: "EMA 200" }).setData(line(times, ema(closes, 200)));
+    // Signaalniveaus van de actieve koopkans
+    if (levels) {
+      price.createPriceLine({ price: levels.target, color: "#22c55e", lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: "doel" });
+      price.createPriceLine({ price: levels.entry, color: "#4f8cff", lineWidth: 1, lineStyle: 0, axisLabelVisible: true, title: "instap" });
+      price.createPriceLine({ price: levels.stop, color: "#f05252", lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: "stop" });
+    }
+
+    chart.addSeries(LineSeries, { color: "#4f8cff", lineWidth: 1, title: "EMA 50" }).setData(line(times, ema(closes, 50)));
+    chart.addSeries(LineSeries, { color: "#a78bfa", lineWidth: 1, title: "EMA 200" }).setData(line(times, ema(closes, 200)));
 
     const volume = chart.addSeries(HistogramSeries, { priceScaleId: "volume", priceFormat: { type: "volume" } });
     volume.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
@@ -67,7 +75,7 @@ export function Chart({ candles }: { candles: Candle[] }) {
     );
 
     // RSI in eigen paneel
-    const rsiSeries = chart.addSeries(LineSeries, { color: "#ea580c", lineWidth: 1, title: "RSI 14" }, 1);
+    const rsiSeries = chart.addSeries(LineSeries, { color: "#f5a524", lineWidth: 1, title: "RSI 14" }, 1);
     rsiSeries.setData(line(times, rsi(closes, 14)));
     rsiSeries.createPriceLine({ price: 70, color: "#a3a3a3", lineStyle: 2, axisLabelVisible: false, lineWidth: 1, title: "" });
     rsiSeries.createPriceLine({ price: 30, color: "#a3a3a3", lineStyle: 2, axisLabelVisible: false, lineWidth: 1, title: "" });
@@ -75,7 +83,7 @@ export function Chart({ candles }: { candles: Candle[] }) {
 
     chart.timeScale().fitContent();
     return () => chart.remove();
-  }, [candles]);
+  }, [candles, levels]);
 
   return <div ref={ref} className="h-[560px] w-full" />;
 }
