@@ -1,0 +1,15 @@
+# Lokale ontwikkeling. Database + Auth draaien via de Supabase CLI (`supabase start`),
+# dit bestand start alleen de worker die daarop schrijft.
+services:
+  worker:
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+    env_file: .env
+    environment:
+      # Vanuit de container naar de Supabase CLI-database op je eigen machine
+      DATABASE_URL: ${DOCKER_DATABASE_URL:-postgresql://postgres:postgres@host.docker.internal:54322/postgres}
+      DATA_DIR: /data
+    volumes:
+      - ./data:/data
+    restart: unless-stopped

@@ -1,0 +1,17 @@
+# Welke instrumenten de worker ophaalt. Uitbreiden = regel toevoegen + backfill draaien.
+# source: naam van een DataSource-adapter (zie worker/koersradar/sources/)
+# fallback: optionele tweede bron als de primaire faalt
+# experimental: true => UI toont waarschuwing, signalen alleen informatief
+
+crypto:
+  source: binance
+  fallback: coinbase
+  quote: USDT          # Coinbase gebruikt USD; de adapter vertaalt dit
+  intervals: [15m, 1h]
+  symbols: [BTC, ETH, SOL, BNB, XRP, ADA, AVAX, LINK, DOGE, DOT]
+
+aex:
+  source: yfinance
+  experimental: true   # onofficieel, personal use only, kan breken
+  intervals: [1h]
+  symbols: [ASML.AS, SHELL.AS, INGA.AS, ADYEN.AS, PHIA.AS]

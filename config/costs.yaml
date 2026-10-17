@@ -1,0 +1,28 @@
+# Kostenaannames voor backtests en R/R-berekening.
+# LET OP: dit zijn placeholders. Zoek de actuele tarieven op bij de bron
+# en zet de datum van controle erbij. Liever te hoog dan te laag.
+# Alle waarden als fractie (0.001 = 0,1%).
+
+binance:
+  checked_on: null       # vul in: YYYY-MM-DD
+  taker_fee: 0.001
+  spread: 0.0002
+  slippage_pct: 0.0005
+  slippage_atr_frac: 0.05  # extra slippage als fractie van ATR
+  min_quote_volume_24h: 5000000
+
+coinbase:
+  checked_on: null
+  taker_fee: 0.006
+  spread: 0.0005
+  slippage_pct: 0.0005
+  slippage_atr_frac: 0.05
+  min_quote_volume_24h: 5000000
+
+yfinance:
+  checked_on: null
+  taker_fee: 0.001       # afhankelijk van je broker
+  spread: 0.0005
+  slippage_pct: 0.0005
+  slippage_atr_frac: 0.05
+  min_quote_volume_24h: 0

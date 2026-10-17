@@ -1,0 +1,38 @@
+[project]
+name = "koersradar"
+version = "0.1.0"
+description = "Worker: koersdata ophalen, signalen berekenen, backtesten en paper trading"
+requires-python = ">=3.12"
+dependencies = [
+    "ccxt>=4.4",
+    "pandas>=2.2",
+    "pyarrow>=17",
+    "pydantic>=2.8",
+    "pyyaml>=6",
+    "psycopg[binary]>=3.2",
+    "apscheduler>=3.10,<4",
+]
+
+[project.optional-dependencies]
+aex = ["yfinance>=0.2.50"]
+analysis = ["TA-Lib>=0.6.5", "vectorbt>=0.27"]
+dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.11", "pandas-stubs", "types-PyYAML"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "DTZ"]   # DTZ: geen naive datetimes
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+strict_optional = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
