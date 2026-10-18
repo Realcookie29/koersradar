@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -92,14 +93,16 @@ export function TopNav({ email }: { email: string | null }) {
 
 function Logo() {
   return (
-    <Link href="/" className="flex items-center gap-2.5 text-text">
-      <span className="grid size-9 place-items-center rounded-full bg-panel-2 ring-1 ring-line backdrop-blur">
-        <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
-          <circle cx="12" cy="12" r="8" />
-          <path d="M12 12l5-5" strokeLinecap="round" />
-        </svg>
-      </span>
-      <span className="font-display text-2xl tracking-tight">Koersradar</span>
+    <Link href="/" className="flex items-center">
+      {/* Wit script-logo uit Stitch; in de lichte variant omgekeerd naar donker */}
+      <Image
+        src="/logo-koersradar.png"
+        alt="Koersradar"
+        width={820}
+        height={251}
+        priority
+        className="h-11 w-auto invert dark:invert-0"
+      />
     </Link>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -57,7 +58,16 @@ export default function LoginPage() {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-8 p-6 text-center">
       <div>
-        <h1 className="animate-fade-slide-in-1 font-display text-5xl tracking-tight sm:text-6xl">Koersradar</h1>
+        <h1 className="animate-fade-slide-in-1">
+          <Image
+            src="/logo-koersradar.png"
+            alt="Koersradar"
+            width={820}
+            height={251}
+            priority
+            className="mx-auto h-20 w-auto invert sm:h-24 dark:invert-0"
+          />
+        </h1>
         <p className="animate-fade-slide-in-2 mt-3 text-base text-muted">Daytrade-scanner voor de groep. Alleen op uitnodiging.</p>
       </div>
       {state === "sent" ? (
