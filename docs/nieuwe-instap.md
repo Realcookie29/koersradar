@@ -1,6 +1,6 @@
 # Nieuwe instapideeën: opzet
 
-Vastgelegd op 18 oktober 2026, **voordat** er uitkomsten zijn bekeken. De uitkomsten komen onderaan zodra ze er zijn.
+Vastgelegd op 18 oktober 2026, **voordat** er uitkomsten zijn bekeken (commit 751da11). De uitkomsten staan onderaan.
 
 ## Waarom
 De varianten van `trend-pullback` (zie [backtest-varianten.md](backtest-varianten.md)) komen zonder kosten allemaal rond 0R uit. Het instapsignaal voorspelt de richting niet. Extra filters lossen dat niet op, dus we testen een paar wezenlijk andere ideeën.
@@ -34,3 +34,42 @@ Voor alle ideeën gelden dezelfde regels als in de backtest: dezelfde kosten, he
    - in 2025 minstens 2 van de 4 kwartalen positief
    - beter dan willekeurige instap met dezelfde stop en uitstap
 5. Ook een veelbelovend idee gaat niet meteen live. De volgende stap is dan paper trading: signalen tonen en bijhouden, zonder echt geld.
+
+## Uitkomsten
+10 crypto-paren van Binance. Gemiddelde R per trade na kosten, met tussen haakjes zonder kosten. "Beter dan toeval" is het deel van 100 rondes willekeurige instap (zelfde stop en uitstap, ongeveer even veel trades) dat slechter uitkwam.
+
+**1h, 2021 t/m 2024**
+
+| Idee | Trades | Winrate | Gem. R | Kwartalen positief | Willekeurig | Beter dan toeval |
+|---|---|---|---|---|---|---|
+| breakout | 3.654 | 28,8% | −0,03 (+0,16) | 5 van 16 | −0,14 | 98% |
+| breakout-rust | 2.947 | 28,7% | −0,04 (+0,17) | 5 van 16 | −0,14 | 100% |
+| **momentum** | 2.642 | 25,7% | **+0,05** (+0,09) | 7 van 16 | +0,00 | 100% |
+| terugval | 7.017 | 49,0% | −0,09 (+0,02) | 0 van 16 | −0,12 | 100% |
+
+Controle op 2025: momentum **−0,03R** (777 trades, 1 van 4 kwartalen positief, willekeurig −0,04R, beter dan toeval 69%).
+
+**15m, 2021 t/m 2024**
+
+| Idee | Trades | Winrate | Gem. R | Kwartalen positief | Willekeurig | Beter dan toeval |
+|---|---|---|---|---|---|---|
+| breakout | 6.850 | 20,6% | −0,14 (+0,16) | 3 van 16 | −0,24 | 95% |
+| breakout-rust | 5.341 | 20,3% | −0,13 (+0,19) | 3 van 16 | −0,24 | 96% |
+| **momentum** | 4.604 | 19,5% | **+0,02** (+0,05) | 7 van 16 | −0,00 | 100% |
+| terugval | 29.398 | 31,7% | −0,17 (+0,03) | 0 van 16 | −0,19 | 100% |
+
+Controle op 2025: momentum **−0,03R** (1.335 trades, 1 van 4 kwartalen positief, willekeurig −0,03R, beter dan toeval 80%).
+
+## Conclusie
+- **Geen enkel idee is veelbelovend volgens de spelregel.** Momentum was het enige idee dat na kosten positief uitkwam in 2021 t/m 2024, maar in 2025 is het op beide tijdschalen negatief en niet duidelijk beter dan toeval.
+- Er is wel vooruitgang ten opzichte van `trend-pullback`: **breakout heeft zonder kosten een echte voorsprong** (+0,16R tot +0,19R, en duidelijk beter dan willekeurige instap). Die voorsprong is alleen kleiner dan de kosten. Op 1h blijft er −0,03R over, op 15m −0,14R.
+- Hoe korter de tijdschaal, hoe zwaarder de kosten wegen. Dat wijst richting een langere tijdschaal (4 uur of dag) of lagere kosten (maker-orders in plaats van taker).
+- Terugval (Connors) wint vaak, maar met kleine winsten. De kosten maken dat ruim negatief.
+- Een vervolgonderzoek moet opnieuw vooraf worden vastgelegd. De cijfers van 2025 zijn nu bekeken, dus die tellen bij een vervolg niet meer als schone controle. Daarvoor blijft 2026 over als hold-out.
+
+## Zelf herhalen
+```bash
+python -m koersradar.backtest.ideas_research --interval 1h                        # alleen 2021 t/m 2024
+python -m koersradar.backtest.ideas_research --interval 1h --check-test momentum  # eenmalig 2025
+```
+Draai dit vanuit de hoofdmap van de repo, zodat `DATA_DIR` uit `.env` klopt.
