@@ -1,6 +1,6 @@
 # Swing-breakout: opzet
 
-Vastgelegd op 18 oktober 2026, **voordat** er uitkomsten zijn bekeken. De uitkomsten komen onderaan.
+Vastgelegd op 18 oktober 2026, **voordat** er uitkomsten zijn bekeken (commit 713351c). De uitkomsten staan onderaan.
 
 ## Waarom
 In [nieuwe-instap.md](nieuwe-instap.md) had breakout als enige idee zonder kosten een duidelijke voorsprong (+0,16R tot +0,19R, beter dan willekeurige instap). Op 15m en 1h waren de kosten groter dan die voorsprong. Op een langere tijdschaal zijn de bewegingen groter en wegen dezelfde kosten minder zwaar. Dit test of breakout als **swingtrade** (dagen tot weken) wel overeind blijft.
@@ -41,3 +41,39 @@ De controleperiode is **2026 (januari tot 18 oktober)**. Niemand heeft die data 
    - In 2026 zijn minstens 2 van de kwartalen positief. Het laatste, onvolledige kwartaal telt mee.
 5. Op de daggrafiek levert 2026 waarschijnlijk weinig trades op. Bij minder dan 30 trades in 2026 spreken we hooguit van een "voorlopig" resultaat.
 6. Ook een veelbelovend resultaat gaat niet meteen live. De volgende stap is dan paper trading.
+
+## Uitkomsten
+10 crypto-paren van Binance. Gemiddelde R per trade na kosten, met tussen haakjes zonder kosten. "Beter dan toeval" is het deel van 100 rondes willekeurige instap (zelfde stop en uitstap) dat slechter uitkwam.
+
+**Dag, 2021 t/m 2025**
+
+| Idee | Trades | Winrate | Gem. R | Kwartalen positief | Willekeurig | Beter dan toeval |
+|---|---|---|---|---|---|---|
+| turtle-20 | 252 | 35,3% | +0,82 (+0,97) | 7 van 20 | +0,20 | 92% |
+| **turtle-55** | 134 | 31,3% | **+1,13** (+1,31) | 7 van 20 | +0,27 | 89% |
+
+Controle op 2026: turtle-55 **+0,05R** (23 trades, 1 van 4 kwartalen positief, willekeurig −0,16R, beter dan toeval 59%).
+
+**4 uur, 2021 t/m 2025**
+
+| Idee | Trades | Winrate | Gem. R | Kwartalen positief | Willekeurig | Beter dan toeval |
+|---|---|---|---|---|---|---|
+| turtle-20 | 1.649 | 28,6% | +0,23 (+0,39) | 12 van 20 | +0,07 | 93% |
+| **turtle-55** | 857 | 26,1% | **+0,61** (+0,83) | 10 van 20 | +0,30 | 95% |
+
+Controle op 2026: turtle-55 **−0,14R** (150 trades, 1 van 4 kwartalen positief, willekeurig −0,20R, beter dan toeval 53%).
+
+## Conclusie
+- **Geen van beide keuzes is veelbelovend volgens de spelregel.**
+  - Dag: al in de ontwikkelperiode net niet beter dan 90% van toeval (89%). In 2026 maar 1 van 4 kwartalen positief, op te weinig trades (23) om iets te zeggen.
+  - 4 uur: haalde in de ontwikkelperiode alle eisen, maar verloor in 2026 na kosten (−0,14R). Het verschil met toeval was in 2026 weg (53%).
+- Op een langere tijdschaal wegen de kosten wel veel minder: ongeveer 0,15R tot 0,2R tegen een beweging van soms meerdere R. Op dat punt klopte de verwachting.
+- De winst in 2021 t/m 2025 komt vooral uit een paar sterke stijgingen. Ook willekeurige instap met dezelfde uitstapregel verdiende toen geld (+0,20R tot +0,30R). In 2026 verloor willekeurige instap (−0,16R tot −0,20R), dus was 2026 voor kopers een moeilijk jaar. Een strategie die alleen long gaat, verdient dan weinig.
+- **2026 is nu bekeken.** Er is geen schone historische controleperiode meer over. Elk volgend idee kan alleen eerlijk worden getoetst door het vanaf nu vooruit te volgen (paper trading).
+
+## Zelf herhalen
+```bash
+python -m koersradar.backtest.ideas_research --interval 1d                         # alleen 2021 t/m 2025
+python -m koersradar.backtest.ideas_research --interval 4h --check-test turtle-55  # eenmalig 2026
+```
+Draai dit vanuit de hoofdmap van de repo.
