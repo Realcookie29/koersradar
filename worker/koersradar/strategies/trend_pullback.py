@@ -158,3 +158,47 @@ def evaluate(df: pd.DataFrame, ctx: Context) -> Signal:
         liquidity_ok=True,
         strategy_version=VERSION,
     )
+
+
+def evaluate_all(df: pd.DataFrame, costs: CostModel) -> pd.DataFrame:
+    """Dezelfde regels als `evaluate`, maar voor elke candle tegelijk (voor backtests).
+
+    Rij t gebruikt alleen candles <= t. Kolommen: `trade` (bool), `stop`, `target`, `atr`,
+    `trend_ok` (EMA 50 boven EMA 200, voor de ongeldigverklaring). Een test bewaakt dat
+    `trade` gelijk is aan `evaluate(df.iloc[: t + 1]).decision == "TRADE"`.
+    """
+    close, high, low, opn, vol = df["close"], df["high"], df["low"], df["open"], df["volume"]
+    e50, e200, r, a = ema(close, 50), ema(close, 200), rsi(close), atr(high, low, close)
+    r_prev = r.shift(1)
+    r_min = r.rolling(DIP_LOOKBACK, min_periods=1).min()
+    qv24 = (close * vol).set_axis(pd.DatetimeIndex(df["open_time"])).rolling("24h").sum().to_numpy()
+
+    stop = close - STOP_ATR * a
+    target = close + TARGET_R * (close - stop)
+    c = _costs(costs)
+    round_trip = close * (2 * c.taker_fee + c.spread + 2 * c.slippage)
+    risk = (close - stop).abs() + round_trip
+    rr = ((target - close).abs() - round_trip) / risk.where(risk > 0)
+
+    enough = pd.Series(range(len(df)), index=df.index) >= MIN_HISTORY - 1
+    trade = (
+        enough
+        & (qv24 >= costs.min_quote_volume_24h)
+        & (e50 > e200)
+        & (close > e200)
+        & (r_min < RSI_DIP)
+        & (r > r_prev)
+        & (close > opn)
+        & (r <= RSI_MAX_ENTRY)
+        & (rr >= MIN_RR)
+    )
+    return pd.DataFrame(
+        {
+            "trade": trade.fillna(False),
+            "stop": stop,
+            "target": target,
+            "atr": a,
+            "trend_ok": e50 > e200,
+        },
+        index=df.index,
+    )
