@@ -160,12 +160,52 @@ def evaluate(df: pd.DataFrame, ctx: Context) -> Signal:
     )
 
 
-def evaluate_all(df: pd.DataFrame, costs: CostModel) -> pd.DataFrame:
+@dataclass(frozen=True)
+class Variant:
+    """Afwijkingen van de basisregels, alleen voor onderzoek in backtests.
+
+    De standaardwaarden zijn precies de live strategie; `evaluate` kent deze opties niet.
+    """
+
+    stop_atr: float = STOP_ATR
+    target_r: float = TARGET_R
+    max_cost_share: float | None = None  # kosten (heen en terug) als deel van de stopafstand
+    htf: str | None = None  # bv. "1D": alleen als EMA 50 > EMA 200 op die tijdschaal
+
+
+BASE = Variant()
+
+
+def htf_trend(df: pd.DataFrame, htf: str) -> pd.Series:
+    """EMA 50 > EMA 200 op een hogere tijdschaal, per candle van df, zonder vooruit te kijken.
+
+    Een candle van de hogere tijdschaal telt pas mee als die gesloten is op het moment dat de
+    candle van df sluit.
+    """
+    times = pd.DatetimeIndex(df["open_time"])
+    step = times.to_series().diff().median()
+    big = df.set_axis(times)["close"].resample(htf, label="left", closed="left").last().dropna()
+    trend = (ema(big, 50) > ema(big, 200)).rename("up")
+    closes_at = pd.DatetimeIndex(big.index) + pd.Timedelta(htf)  # vaste duur, bv. "1D" of "4h"
+    # Zelfde tijdseenheid aan beide kanten (Parquet levert ms, berekeningen soms us).
+    available = pd.DataFrame({"at": closes_at.as_unit("ns"), "up": trend.to_numpy()})
+    bars = pd.DataFrame({"at": (times + step).as_unit("ns")})
+    merged = pd.merge_asof(bars, available.sort_values("at"), on="at", direction="backward")
+    return pd.Series(merged["up"].eq(True).to_numpy(), index=df.index)
+
+
+def evaluate_all(
+    df: pd.DataFrame,
+    costs: CostModel,
+    variant: Variant = BASE,
+    regime_ok: pd.Series | None = None,
+) -> pd.DataFrame:
     """Dezelfde regels als `evaluate`, maar voor elke candle tegelijk (voor backtests).
 
     Rij t gebruikt alleen candles <= t. Kolommen: `trade` (bool), `stop`, `target`, `atr`,
     `trend_ok` (EMA 50 boven EMA 200, voor de ongeldigverklaring). Een test bewaakt dat
-    `trade` gelijk is aan `evaluate(df.iloc[: t + 1]).decision == "TRADE"`.
+    `trade` met de standaard `variant` gelijk is aan `evaluate(df.iloc[: t + 1])`.
+    `regime_ok` (bool per rij) is een extra marktfilter, bv. de dagtrend van BTC.
     """
     close, high, low, opn, vol = df["close"], df["high"], df["low"], df["open"], df["volume"]
     e50, e200, r, a = ema(close, 50), ema(close, 200), rsi(close), atr(high, low, close)
@@ -173,8 +213,8 @@ def evaluate_all(df: pd.DataFrame, costs: CostModel) -> pd.DataFrame:
     r_min = r.rolling(DIP_LOOKBACK, min_periods=1).min()
     qv24 = (close * vol).set_axis(pd.DatetimeIndex(df["open_time"])).rolling("24h").sum().to_numpy()
 
-    stop = close - STOP_ATR * a
-    target = close + TARGET_R * (close - stop)
+    stop = close - variant.stop_atr * a
+    target = close + variant.target_r * (close - stop)
     c = _costs(costs)
     round_trip = close * (2 * c.taker_fee + c.spread + 2 * c.slippage)
     risk = (close - stop).abs() + round_trip
@@ -192,6 +232,12 @@ def evaluate_all(df: pd.DataFrame, costs: CostModel) -> pd.DataFrame:
         & (r <= RSI_MAX_ENTRY)
         & (rr >= MIN_RR)
     )
+    if variant.max_cost_share is not None:
+        trade &= round_trip <= variant.max_cost_share * (close - stop)
+    if variant.htf is not None:
+        trade &= htf_trend(df, variant.htf)
+    if regime_ok is not None:
+        trade &= regime_ok.reindex(df.index, fill_value=False).astype(bool)
     return pd.DataFrame(
         {
             "trade": trade.fillna(False),

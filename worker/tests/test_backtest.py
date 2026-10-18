@@ -222,3 +222,22 @@ def test_walk_forward_blocks_follow_calendar_quarters():
     assert blocks[0].start == ts("2024-01-01") and blocks[-1].end == ts("2026-01-01")
     assert all(p.start.month in (1, 4, 7, 10) and p.start.day == 1 for p in blocks)
     assert len(blocks) == 8
+
+
+def test_daily_trend_filter_does_not_look_ahead():
+    """De dagtrend op uur t verandert niet als de koersen na t veranderen."""
+    df = random_market(24 * 260, 4)
+    cut = 24 * 230 + 7  # midden op een dag
+    altered = df.copy()
+    altered.loc[cut:, ["open", "high", "low", "close"]] *= 3.0
+    full = tp.htf_trend(altered, "1D")
+    part = tp.htf_trend(df.iloc[:cut], "1D")
+    assert full.iloc[:cut].equals(part)
+    assert part.any(), "testreeks moet een opwaartse dagtrend hebben"
+
+
+def test_base_variant_equals_live_rules():
+    df = random_market(420, 2)
+    pd.testing.assert_frame_equal(
+        tp.evaluate_all(df, COSTS), tp.evaluate_all(df, COSTS, tp.Variant())
+    )
