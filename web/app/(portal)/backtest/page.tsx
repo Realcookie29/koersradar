@@ -37,12 +37,12 @@ type Run = {
 
 const PERIOD_LABEL = { train: "2021 t/m 2024", test: "2025", holdout: "Hold-out" } as const;
 
-const pct = (v: number | null | undefined, sign = false) =>
+const pct = (v: number | null | undefined, sign = false, digits = 1) =>
   v === null || v === undefined || Number.isNaN(v)
     ? "–"
     : new Intl.NumberFormat("nl-NL", {
         style: "percent",
-        maximumFractionDigits: 1,
+        maximumFractionDigits: digits,
         signDisplay: sign ? "exceptZero" : "auto",
       }).format(v);
 
@@ -57,6 +57,9 @@ const tone = (v: number | null | undefined) =>
 
 const date = (iso: string) =>
   new Date(iso).toLocaleDateString("nl-NL", { timeZone: "UTC", day: "numeric", month: "short", year: "numeric" });
+
+/** Periode-einden zijn exclusief (1 apr = tot 1 apr); toon de laatste dag die erin valt. */
+const lastDay = (iso: string) => date(new Date(new Date(iso).getTime() - 1).toISOString());
 
 /** Alle trades van alle instrumenten samen: gewogen naar het aantal trades. */
 function pool(runs: Run[]) {
@@ -176,7 +179,7 @@ function WalkForward({ runs }: { runs: Run[] }) {
             return (
               <tr key={start}>
                 <td className="px-3 py-2 font-sans text-muted">
-                  {date(start)} t/m {date(rs[0].period_end)}
+                  {date(start)} t/m {lastDay(rs[0].period_end)}
                 </td>
                 <td className="px-3 py-2">{p.trades}</td>
                 <td className="px-3 py-2">{pct(p.winrate)}</td>
@@ -286,7 +289,7 @@ async function Report({ interval }: { interval: Interval }) {
         {costs && (
           <>
             {" "}
-            · kosten: fee {pct(costs.taker_fee)}, spread {pct(costs.spread)} plus slippage
+            · kosten: fee {pct(costs.taker_fee, false, 3)}, spread {pct(costs.spread, false, 3)} plus slippage
             {!costs.checked_on && <span className="text-warn"> (tarieven nog niet gecontroleerd)</span>}
           </>
         )}
