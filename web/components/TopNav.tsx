@@ -9,6 +9,7 @@ const NAV = [
   { href: "/", label: "Scanner" },
   { href: "/markten", label: "Markten" },
   { href: "/signalen", label: "Signalenlog" },
+  { href: "/backtest", label: "Backtest" },
 ];
 
 export function TopNav({ email }: { email: string | null }) {
@@ -53,20 +54,24 @@ export function TopNav({ email }: { email: string | null }) {
             ))}
             {signout}
           </nav>
+          <InfoButton active={active("/info")} />
         </div>
 
-        <button
-          onClick={() => setOpen(!open)}
-          className="inline-flex size-10 items-center justify-center rounded-full bg-panel-2 ring-1 ring-line backdrop-blur md:hidden"
-          aria-expanded={open}
-          aria-label="Menu openen of sluiten"
-        >
+        <div className="flex items-center gap-2 md:hidden">
+          <InfoButton active={active("/info")} />
+          <button
+            onClick={() => setOpen(!open)}
+            className="inline-flex size-10 items-center justify-center rounded-full bg-panel-2 ring-1 ring-line backdrop-blur"
+            aria-expanded={open}
+            aria-label="Menu openen of sluiten"
+          >
           <svg viewBox="0 0 24 24" className="size-5 text-text" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden>
             <path d="M4 5h16" />
             <path d="M4 12h16" />
             <path d="M4 19h16" />
           </svg>
-        </button>
+          </button>
+        </div>
       </div>
 
       {open && (
@@ -88,6 +93,25 @@ export function TopNav({ email }: { email: string | null }) {
         </div>
       )}
     </header>
+  );
+}
+
+function InfoButton({ active }: { active: boolean }) {
+  return (
+    <Link
+      href="/info"
+      title="Over Koersradar"
+      aria-label="Over Koersradar"
+      className={`grid size-10 place-items-center rounded-full ring-1 ring-line backdrop-blur transition-colors hover:text-text ${
+        active ? "bg-panel-2 text-text" : "bg-panel text-muted"
+      }`}
+    >
+      <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden>
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 11v5" />
+        <path d="M12 8h.01" />
+      </svg>
+    </Link>
   );
 }
 

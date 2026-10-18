@@ -15,6 +15,8 @@ Voorbeelden:
 import argparse
 import json
 import logging
+import os
+import urllib.request
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 
@@ -184,36 +186,79 @@ def pooled(rows: list[dict], kind: str) -> dict | None:
     }
 
 
-def save_db(rows: list[dict], interval: str, costs_by_source: dict[str, dict]) -> int:
-    from koersradar.db import connect  # alleen nodig bij --save-db
+def _records(rows: list[dict], interval: str, params_by_symbol: dict[str, dict], ids: dict) -> list:
+    """Regels voor public.backtest_runs; oneindige waarden (PF zonder verlies) worden null."""
+
+    def clean(d: dict) -> dict:
+        return {
+            k: (None if isinstance(v, float) and not np.isfinite(v) else v) for k, v in d.items()
+        }
+
+    return [
+        {
+            "strategy_version": tp.VERSION,
+            "instrument_id": ids.get(r["symbol"]),
+            "interval": interval,
+            "params": params_by_symbol[r["symbol"]],
+            "period_kind": r["period_kind"],
+            "period_start": r["period_start"],
+            "period_end": r["period_end"],
+            "metrics": clean(r["metrics"]),
+            "benchmarks": r["benchmarks"],
+        }
+        for r in rows
+    ]
+
+
+def _save_postgres(rows: list[dict], interval: str, params_by_symbol: dict[str, dict]) -> int:
+    from koersradar.db import connect
 
     with connect() as conn, conn.cursor() as cur:
         cur.execute("select symbol, id from public.instruments")
         ids: dict[str, int] = dict(cur.fetchall())
-        for r in rows:
-            m = {
-                k: (None if isinstance(v, float) and not np.isfinite(v) else v)
-                for k, v in r["metrics"].items()
-            }
+        for rec in _records(rows, interval, params_by_symbol, ids):
             cur.execute(
                 """insert into public.backtest_runs
                    (strategy_version, instrument_id, interval, params, period_kind,
                     period_start, period_end, metrics, benchmarks)
                    values (%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
                 (
-                    tp.VERSION,
-                    ids.get(r["symbol"]),
-                    interval,
-                    json.dumps(costs_by_source[r["symbol"]]),
-                    r["period_kind"],
-                    r["period_start"],
-                    r["period_end"],
-                    json.dumps(m),
-                    json.dumps(r["benchmarks"]),
+                    *[rec[k] for k in ("strategy_version", "instrument_id", "interval")],
+                    json.dumps(rec["params"]),
+                    *[rec[k] for k in ("period_kind", "period_start", "period_end")],
+                    json.dumps(rec["metrics"]),
+                    json.dumps(rec["benchmarks"]),
                 ),
             )
         conn.commit()
     return len(rows)
+
+
+def _save_rest(rows: list[dict], interval: str, params_by_symbol: dict[str, dict]) -> int:
+    """Via de Supabase REST-API met de service-key; één verzoek, dus één created_at."""
+    url, key = os.environ["SUPABASE_URL"].rstrip("/"), os.environ["SUPABASE_SERVICE_ROLE_KEY"]
+    headers = {"apikey": key, "Authorization": f"Bearer {key}", "Content-Type": "application/json"}
+
+    def call(method: str, path: str, body: object | None = None) -> object:
+        data = json.dumps(body).encode() if body is not None else None
+        req = urllib.request.Request(f"{url}/rest/v1/{path}", data, headers, method=method)
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            raw = resp.read()
+        return json.loads(raw) if raw else None
+
+    found = call("GET", "instruments?select=id,symbol")
+    ids = {i["symbol"]: i["id"] for i in found} if isinstance(found, list) else {}
+    call("POST", "backtest_runs", _records(rows, interval, params_by_symbol, ids))
+    return len(rows)
+
+
+def save_db(rows: list[dict], interval: str, params_by_symbol: dict[str, dict]) -> int:
+    """Postgres als DATABASE_URL er is, anders de REST-API met de service-key."""
+    if os.environ.get("DATABASE_URL"):
+        return _save_postgres(rows, interval, params_by_symbol)
+    if os.environ.get("SUPABASE_URL") and os.environ.get("SUPABASE_SERVICE_ROLE_KEY"):
+        return _save_rest(rows, interval, params_by_symbol)
+    raise RuntimeError("Opslaan vraagt DATABASE_URL of SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY")
 
 
 def main() -> None:
