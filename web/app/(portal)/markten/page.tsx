@@ -2,6 +2,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { FreshnessBadge } from "@/components/FreshnessBadge";
+import { MarketOverview } from "@/components/MarketOverview";
 import { createClient } from "@/lib/supabase/server";
 import type { DataStatus, Instrument } from "@/lib/types";
 
@@ -60,8 +61,15 @@ export default function MarktenPage() {
     <div className="mx-auto max-w-5xl">
       <header className="mb-6">
         <h1 className="animate-fade-slide-in-1 font-display text-4xl tracking-tight sm:text-5xl">Markten</h1>
-        <p className="mt-1 text-sm text-muted">Databron, laatste candle en versheid per instrument.</p>
+        <p className="mt-1 text-sm text-muted">Hoe de markt ervoor staat, en hoe vers de data per instrument is.</p>
       </header>
+      <section className="mb-10">
+        <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted">Marktoverzicht</h2>
+        <Suspense fallback={<p className="text-muted">Laden…</p>}>
+          <MarketOverview />
+        </Suspense>
+      </section>
+      <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted">Databronnen en versheid</h2>
       <Suspense fallback={<p className="text-muted">Laden…</p>}>
         <InstrumentList />
       </Suspense>
