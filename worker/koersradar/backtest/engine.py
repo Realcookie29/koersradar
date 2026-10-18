@@ -38,6 +38,8 @@ class Trade:
     r_multiple: float
     return_pct: float
     bars_held: int
+    entry_raw: float = float("nan")  # koers zonder kosten: de open van de instapcandle
+    exit_raw: float = float("nan")  # koers zonder kosten: stop, doel, open of slot
 
 
 @dataclass(frozen=True)
@@ -104,6 +106,8 @@ def simulate(
                 r_multiple=(proceeds - pos["cost"]) / pos["risk"],
                 return_pct=proceeds / pos["cost"] - 1,
                 bars_held=b - pos["entry"] + 1,
+                entry_raw=pos["raw"],
+                exit_raw=float(raw_price),
             )
         )
         pos = None
@@ -130,6 +134,7 @@ def simulate(
                     "atr": a,
                     "cost": cost,
                     "risk": risk,
+                    "raw": float(opn[b]),
                 }
 
         if pos is not None:

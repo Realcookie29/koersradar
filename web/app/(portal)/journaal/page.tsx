@@ -2,6 +2,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { JournalForm, type InstrumentOption, type Prefill } from "@/components/JournalForm";
+import { PaperSection, type PaperTrade } from "@/components/PaperSection";
 import { TradeActions } from "@/components/TradeActions";
 import { fmtNum, fmtPrice, fmtTime } from "@/lib/format";
 import { type JournalTrade, levelsOf, pnlPerUnit, rMultiple, stats } from "@/lib/journal";
@@ -75,7 +76,15 @@ async function JournalContent(props: PageProps<"/journaal">) {
   const { data: claims } = await supabase.auth.getClaims();
   const me = (claims?.claims?.sub as string | undefined) ?? null;
 
-  const [{ data: instruments }, { data: trades }, { data: profiles }, prices, { data: signal }] = await Promise.all([
+  const [
+    { data: instruments },
+    { data: trades },
+    { data: profiles },
+    prices,
+    { data: signal },
+    { data: paper },
+    { count: skipped },
+  ] = await Promise.all([
     supabase.from("instruments").select("id, symbol, market, source, experimental").eq("active", true).order("market").order("symbol"),
     supabase.from("journal_trades").select("*").order("opened_at", { ascending: false }).limit(500),
     supabase.from("profiles").select("id, display_name"),
@@ -87,6 +96,12 @@ async function JournalContent(props: PageProps<"/journaal">) {
           .eq("id", signalParam)
           .maybeSingle()
       : Promise.resolve({ data: null }),
+    supabase
+      .from("paper_trades")
+      .select("*, signals(instrument_id, interval, stop_loss, target)")
+      .order("opened_at", { ascending: false })
+      .limit(500),
+    supabase.from("paper_decisions").select("signal_id", { count: "exact", head: true }).eq("outcome", "skipped"),
   ]);
 
   const list = (instruments as Instrument[] | null) ?? [];
@@ -147,8 +162,15 @@ async function JournalContent(props: PageProps<"/journaal">) {
         </p>
       </section>
 
+      <PaperSection
+        trades={(paper as PaperTrade[] | null) ?? []}
+        skipped={skipped ?? 0}
+        symbols={new Map(list.map((i) => [i.id, i.symbol]))}
+        prices={prices}
+      />
+
       <section>
-        <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted">Open ({open.length})</h2>
+        <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted">Eigen trades, open ({open.length})</h2>
         {open.length ? (
           <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-panel">
             {open.map((t) => {
@@ -189,7 +211,7 @@ async function JournalContent(props: PageProps<"/journaal">) {
       </section>
 
       <section>
-        <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted">Gesloten ({closed.length})</h2>
+        <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted">Eigen trades, gesloten ({closed.length})</h2>
         {closed.length ? (
           <div className="overflow-x-auto rounded-2xl border border-line bg-panel">
             <table className="w-full min-w-[760px] text-sm">

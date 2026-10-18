@@ -1,4 +1,4 @@
-"""Worker-loop: ingest + scan elke 15 minuten, en handmatige scans vanuit het portaal."""
+"""Worker-loop: elke 15 minuten ingest, scan en paper trading, plus handmatige scans."""
 
 import logging
 import os
@@ -8,6 +8,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 
 from koersradar import db
 from koersradar.ingest.run import ingest_once
+from koersradar.paper.ledger import run_paper_round
 from koersradar.scanner.run import run_scan
 
 log = logging.getLogger(__name__)
@@ -18,6 +19,7 @@ def scheduled_round() -> None:
     with _lock:
         ingest_once()
         run_scan("schedule")
+        run_paper_round()
 
 
 def poll_manual_requests() -> None:
@@ -33,6 +35,7 @@ def poll_manual_requests() -> None:
         log.info("Handmatige scan %s: eerst verse data ophalen", run_id)
         ingest_once()
         run_scan("manual", run_id=run_id)
+        run_paper_round()
 
 
 def main() -> None:

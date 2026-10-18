@@ -30,7 +30,7 @@ const NOW = [
   {
     title: "Journaal",
     href: "/journaal",
-    text: "Paper trading zonder echt geld. Leg je eigen trades vast, met een risicocalculator die uitrekent hoeveel je kunt kopen. Je ziet per persoon en voor de groep wat het na kosten oplevert.",
+    text: "Paper trading zonder echt geld. De worker voert elk koopsignaal van de scanner automatisch met nepgeld uit (1% risico per trade, maximaal 3% verlies per dag), zodat we de regels vanaf nu vooruit testen. Daarnaast leg je eigen trades vast, met een risicocalculator die uitrekent hoeveel je kunt kopen. Alles na kosten, per persoon en voor de groep.",
   },
   {
     title: "AI-uitleg",
@@ -42,10 +42,6 @@ const NEXT = [
   {
     title: "Watchlist",
     text: "Iedereen een eigen lijst met instrumenten die hij of zij wil volgen.",
-  },
-  {
-    title: "Automatisch paper trading",
-    text: "De signalen van de scanner automatisch met nepgeld uitvoeren, met vaste grenzen: maximaal 1% risico per trade en maximaal 3% verlies per dag. Zo testen we de regels vanaf nu vooruit.",
   },
   {
     title: "Evaluatie",
