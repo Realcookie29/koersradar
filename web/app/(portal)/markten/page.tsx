@@ -28,7 +28,7 @@ async function InstrumentList() {
         return (
           <section key={g.key}>
             <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted">{g.title}</h2>
-            <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-panel">
+            <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-panel">
               {list.map((ins) => (
                 <li key={ins.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                   <Link href={`/chart/${ins.id}`} className="font-medium hover:underline">
@@ -59,7 +59,7 @@ export default function MarktenPage() {
   return (
     <div className="mx-auto max-w-5xl">
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Markten</h1>
+        <h1 className="animate-fade-slide-in-1 font-display text-4xl tracking-tight sm:text-5xl">Markten</h1>
         <p className="mt-1 text-sm text-muted">Databron, laatste candle en versheid per instrument.</p>
       </header>
       <Suspense fallback={<p className="text-muted">Laden…</p>}>

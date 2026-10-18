@@ -32,14 +32,14 @@ async function Log() {
 
   if (!rows.length) {
     return (
-      <div className="rounded-xl border border-dashed border-line bg-panel px-5 py-8 text-center text-sm text-muted">
+      <div className="rounded-2xl border border-dashed border-line bg-panel px-5 py-8 text-center text-sm text-muted">
         Nog geen koopsignalen gelogd. Elke kans die de scanner vindt komt hier, zodat we achteraf kunnen beoordelen
         wat werkte.
       </div>
     );
   }
   return (
-    <div className="overflow-x-auto rounded-xl border border-line bg-panel">
+    <div className="overflow-x-auto rounded-2xl border border-line bg-panel">
       <table className="w-full min-w-[720px] text-sm">
         <thead className="bg-panel-2 text-left text-xs text-muted">
           <tr>
@@ -74,7 +74,7 @@ export default function SignalenPage() {
   return (
     <div className="mx-auto max-w-6xl">
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Signalenlog</h1>
+        <h1 className="animate-fade-slide-in-1 font-display text-4xl tracking-tight sm:text-5xl">Signalenlog</h1>
         <p className="mt-1 text-sm text-muted">
           Alle koopsignalen met hun niveaus. Uitkomsten (geraakt doel of stop) volgen met paper trading in fase 4.
         </p>

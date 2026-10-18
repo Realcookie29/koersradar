@@ -45,7 +45,7 @@ async function Scanner() {
     <>
       <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Daytrade-scanner</h1>
+          <h1 className="animate-fade-slide-in-1 font-display text-4xl tracking-tight sm:text-5xl">Daytrade-scanner</h1>
           <p className="mt-1 text-sm text-muted">
             Zoekt elke 15 minuten naar pullbacks in een opwaartse trend (alleen kopen).{" "}
             {lastDone && (
@@ -70,7 +70,7 @@ async function Scanner() {
             ))}
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed border-line bg-panel px-5 py-8 text-center">
+          <div className="rounded-2xl border border-dashed border-line bg-panel px-5 py-8 text-center">
             <p className="font-medium">Op dit moment geen koopkansen</p>
             <p className="mx-auto mt-1 max-w-xl text-sm text-muted">
               Geen enkel instrument voldoet aan alle regels. Dat is een geldige uitkomst: niet traden is beter dan
@@ -85,7 +85,7 @@ async function Scanner() {
           <h2 className="text-sm font-medium uppercase tracking-wide text-muted">Radar</h2>
           <p className="text-xs text-muted">{STEPS.join(" → ")}</p>
         </div>
-        <div className="overflow-hidden rounded-xl border border-line bg-panel">
+        <div className="overflow-hidden rounded-2xl border border-line bg-panel">
           <table className="w-full text-sm">
             <thead className="bg-panel-2 text-left text-xs text-muted">
               <tr>
