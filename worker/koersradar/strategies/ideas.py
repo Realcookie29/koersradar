@@ -23,6 +23,7 @@ QUIET_DAYS = 30
 MOMENTUM_DAYS = 7
 MOMENTUM_TOP = 3
 MOMENTUM_KEEP = 5
+TURTLE_HISTORY = 60
 
 
 def bars_per_hour(df: pd.DataFrame) -> int:
@@ -30,7 +31,7 @@ def bars_per_hour(df: pd.DataFrame) -> int:
     return max(1, int(pd.Timedelta(hours=1) / step))
 
 
-def _base(df: pd.DataFrame, costs: CostModel) -> pd.Series:
+def _base(df: pd.DataFrame, costs: CostModel, min_history: int = MIN_HISTORY) -> pd.Series:
     """Genoeg historie en genoeg omzet in de laatste 24 uur (zelfde filter als trend-pullback)."""
     qv24 = (
         (df["close"] * df["volume"])
@@ -39,7 +40,7 @@ def _base(df: pd.DataFrame, costs: CostModel) -> pd.Series:
         .sum()
         .to_numpy()
     )
-    enough = np.arange(len(df)) >= MIN_HISTORY - 1
+    enough = np.arange(len(df)) >= min_history - 1
     return pd.Series(enough & (qv24 >= costs.min_quote_volume_24h), index=df.index)
 
 
@@ -143,3 +144,29 @@ def momentum(df: pd.DataFrame, costs: CostModel, ranks: pd.DataFrame) -> pd.Data
     trade = _base(df, costs) & (ranks["rank"] <= MOMENTUM_TOP) & up & day_atr.notna()
     keep = (ranks["rank"] <= MOMENTUM_KEEP) & up
     return _frame(trade, close - 2 * day_atr, a, keep)
+
+
+def resample(df: pd.DataFrame, rule: str) -> pd.DataFrame:
+    """Maak grotere candles (bv. "4h" of "1D", UTC) uit kleinere. Alleen gesloten candles:
+    een candle die na de laatste kleine candle nog doorloopt, valt weg."""
+    times = pd.DatetimeIndex(df["open_time"])
+    step = times.to_series().diff().median()
+    big = (
+        df.set_axis(times)[["open", "high", "low", "close", "volume"]]
+        .resample(rule, label="left", closed="left")
+        .agg({"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"})
+        .dropna(subset=["close"])
+    )
+    complete = big.index + pd.Timedelta(rule) <= times[-1] + step
+    big = big[complete]
+    return big.rename_axis("open_time").reset_index()
+
+
+def turtle(df: pd.DataFrame, costs: CostModel, entry: int, exit_: int) -> pd.DataFrame:
+    """Turtle-regels: slot boven de hoogste high van `entry` candles, stop 2x ATR(20),
+    uit bij een slot onder de laagste low van `exit_` candles."""
+    close, high, low = df["close"], df["high"], df["low"]
+    a = atr(high, low, close, 20)
+    trade = _base(df, costs, TURTLE_HISTORY) & (close > high.shift(1).rolling(entry).max())
+    keep = close >= low.shift(1).rolling(exit_).min()
+    return _frame(trade, close - 2 * a, a, keep)

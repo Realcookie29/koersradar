@@ -5,6 +5,7 @@ Zie docs/nieuwe-instap.md. Zonder --check-test wordt alleen de ontwikkelperiode 
 Voorbeelden:
   python -m koersradar.backtest.ideas_research --interval 1h
   python -m koersradar.backtest.ideas_research --interval 1h --check-test breakout
+  python -m koersradar.backtest.ideas_research --interval 1d   # swing, zie docs/swing-breakout.md
 """
 
 import argparse
@@ -29,21 +30,37 @@ IDEAS: dict[str, Builder] = {
     "momentum": ideas.momentum,
     "terugval": lambda df, c, _: ideas.pullback_rsi2(df, c),
 }
+# Swing (docs/swing-breakout.md): 4 uur en dag, gemaakt uit de 1h-historie.
+SWING: dict[str, Builder] = {
+    "turtle-20": lambda df, c, _: ideas.turtle(df, c, 20, 10),
+    "turtle-55": lambda df, c, _: ideas.turtle(df, c, 55, 20),
+}
+SWING_RULES = {"4h": "4h", "1d": "1D"}
+SWING_SPLIT, SWING_HOLDOUT = "2026-01-01", "2027-01-01"
 RANDOM_RUNS = 100
 RANDOM_SEED = 42
 
 
+def _ideas(interval: str) -> dict[str, Builder]:
+    return SWING if interval in SWING_RULES else IDEAS
+
+
+def _min_trades(interval: str) -> int:
+    return 50 if interval == "1d" else MIN_TRADES
+
+
 def _load(interval: str) -> list[tuple[str, CostModel, pd.DataFrame]]:
     costs_all = load_costs()
-    return [
-        (
-            i.symbol,
-            costs_all[i.source],
-            read_history(i.source, i.symbol, interval).reset_index(drop=True),
-        )
-        for i in load_instruments()
-        if i.market == "crypto" and interval in i.intervals
-    ]
+    source_interval = "1h" if interval in SWING_RULES else interval
+    out = []
+    for i in load_instruments():
+        if i.market != "crypto" or source_interval not in i.intervals:
+            continue
+        df = read_history(i.source, i.symbol, source_interval).reset_index(drop=True)
+        if interval in SWING_RULES:
+            df = ideas.resample(df, SWING_RULES[interval])
+        out.append((i.symbol, costs_all[i.source], df))
+    return out
 
 
 def _windows(df: pd.DataFrame, kind: str, split: str, holdout: str) -> list[tuple[str, int, int]]:
@@ -64,13 +81,18 @@ def run(
 ) -> tuple[pd.DataFrame, dict[str, np.ndarray]]:
     """Trades per idee (netto en bruto) en, als gevraagd, de gem. R van willekeurige instap."""
     data = _load(interval)
-    ranks = ideas.momentum_ranks({s: df for s, _, df in data})
+    builders = _ideas(interval)
+    min_history = ideas.TURTLE_HISTORY if builders is SWING else ideas.MIN_HISTORY
+    if "momentum" in names:
+        ranks = ideas.momentum_ranks({s: df for s, _, df in data})
+    else:
+        ranks = {s: pd.DataFrame(index=df.index) for s, _, df in data}
     out = []
     rnd: dict[str, list[list[float]]] = {n: [[] for _ in range(random_runs)] for n in names}
     for symbol, costs, df in data:
         windows = _windows(df, kind, split, holdout)
         for name in names:
-            sig = IDEAS[name](df, costs, ranks[symbol])
+            sig = builders[name](df, costs, ranks[symbol])
             rng = np.random.default_rng(RANDOM_SEED)
             for period, start, end in windows:
                 for label, c in (("netto", costs), ("bruto", FREE)):
@@ -94,7 +116,7 @@ def run(
                 eligible = (
                     (idx >= start)
                     & (idx < end)
-                    & (idx >= ideas.MIN_HISTORY)
+                    & (idx >= min_history)
                     & np.isfinite(sig["stop"].to_numpy(dtype=float))
                 )
                 prob = min(1.0, n / max(1, int(eligible.sum())))
@@ -110,11 +132,16 @@ def main() -> None:
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    ap.add_argument("--interval", default="1h", choices=["15m", "1h"])
-    ap.add_argument("--split", default="2025-01-01")
-    ap.add_argument("--holdout", default="2026-01-01")
-    ap.add_argument("--check-test", metavar="IDEE", choices=list(IDEAS))
+    ap.add_argument("--interval", default="1h", choices=["15m", "1h", *SWING_RULES])
+    ap.add_argument("--split", help="standaard 2025-01-01, voor 4h/1d 2026-01-01")
+    ap.add_argument("--holdout", help="standaard 2026-01-01, voor 4h/1d 2027-01-01")
+    ap.add_argument("--check-test", metavar="IDEE", choices=[*IDEAS, *SWING])
     args = ap.parse_args()
+    swing = args.interval in SWING_RULES
+    args.split = args.split or (SWING_SPLIT if swing else "2025-01-01")
+    args.holdout = args.holdout or (SWING_HOLDOUT if swing else "2026-01-01")
+    if args.check_test and args.check_test not in _ideas(args.interval):
+        ap.error(f"{args.check_test} hoort niet bij interval {args.interval}")
     logging.basicConfig(level="WARNING")
     pd.set_option("display.width", 140)
     fmt = {
@@ -125,7 +152,7 @@ def main() -> None:
     }
 
     kind = "test" if args.check_test else "train"
-    names = [args.check_test] if args.check_test else list(IDEAS)
+    names = [args.check_test] if args.check_test else list(_ideas(args.interval))
     trades, random_avg = run(
         args.interval, kind, names, args.split, args.holdout, random_runs=RANDOM_RUNS
     )
@@ -146,7 +173,7 @@ def main() -> None:
     print(f"\n{title}\n")
     print(res.to_string(formatters=fmt))
     if not args.check_test:
-        eligible = res[res.trades >= MIN_TRADES]
+        eligible = res[res.trades >= _min_trades(args.interval)]
         if not eligible.empty:
             best = str(eligible["gem_R_netto"].idxmax())
             print(f"\nGekozen volgens de spelregel: {best}")
