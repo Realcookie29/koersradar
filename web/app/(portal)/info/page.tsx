@@ -28,6 +28,11 @@ const NOW = [
     text: "Hoe de regels van de scanner het sinds 2021 hadden gedaan, na kosten, vergeleken met kopen en vasthouden en met willekeurig instappen.",
   },
   {
+    title: "Journaal",
+    href: "/journaal",
+    text: "Paper trading zonder echt geld. Leg je eigen trades vast, met een risicocalculator die uitrekent hoeveel je kunt kopen. Je ziet per persoon en voor de groep wat het na kosten oplevert.",
+  },
+  {
     title: "AI-uitleg",
     text: "Bij een kans schrijft Claude een korte uitleg in gewone taal. De AI rekent zelf niets: een uitleg met een getal dat niet uit de berekening komt, wordt afgewezen.",
   },
@@ -39,8 +44,8 @@ const NEXT = [
     text: "Iedereen een eigen lijst met instrumenten die hij of zij wil volgen.",
   },
   {
-    title: "Paper trading",
-    text: "Signalen automatisch met nepgeld uitvoeren, met vaste grenzen: maximaal 1% risico per trade en maximaal 3% verlies per dag. Elke trade blijft gekoppeld aan zijn signaal.",
+    title: "Automatisch paper trading",
+    text: "De signalen van de scanner automatisch met nepgeld uitvoeren, met vaste grenzen: maximaal 1% risico per trade en maximaal 3% verlies per dag. Zo testen we de regels vanaf nu vooruit.",
   },
   {
     title: "Evaluatie",
