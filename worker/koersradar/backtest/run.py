@@ -59,7 +59,11 @@ def make_periods(
 ) -> list[Period]:
     stop = min(holdout, last)
     periods = [Period("train", first, min(split, stop)), Period("test", split, stop)]
-    cur = first
+    # Blokken op kalendergrenzen (bij 3 maanden: kwartalen); een onvolledig eerste stuk valt weg.
+    month0 = ((first.month - 1) // wf_months) * wf_months + 1
+    cur = pd.Timestamp(year=first.year, month=month0, day=1, tz=first.tz)
+    if cur < first:
+        cur += pd.DateOffset(months=wf_months)
     while cur < stop:
         nxt = min(cur + pd.DateOffset(months=wf_months), stop)
         periods.append(Period("walk_forward", cur, nxt))

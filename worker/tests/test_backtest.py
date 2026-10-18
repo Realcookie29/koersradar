@@ -206,3 +206,19 @@ def test_periods_keep_holdout_out_by_default():
     assert kinds.count("walk_forward") == 4
     with_holdout = make_periods(ts("2024-01-01"), ts("2026-06-01"), include_holdout=True, **args)
     assert with_holdout[-1].kind == "holdout"
+
+
+def test_walk_forward_blocks_follow_calendar_quarters():
+    ts = lambda s: pd.Timestamp(s, tz=UTC)  # noqa: E731
+    periods = make_periods(
+        ts("2023-12-31 20:00"),
+        ts("2026-06-01"),
+        split=ts("2025-01-01"),
+        holdout=ts("2026-01-01"),
+        wf_months=3,
+        include_holdout=False,
+    )
+    blocks = [p for p in periods if p.kind == "walk_forward"]
+    assert blocks[0].start == ts("2024-01-01") and blocks[-1].end == ts("2026-01-01")
+    assert all(p.start.month in (1, 4, 7, 10) and p.start.day == 1 for p in blocks)
+    assert len(blocks) == 8

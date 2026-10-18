@@ -46,8 +46,11 @@ const pct = (v: number | null | undefined, sign = false) =>
         signDisplay: sign ? "exceptZero" : "auto",
       }).format(v);
 
-const r = (v: number | null | undefined) =>
-  v === null || v === undefined ? "–" : `${v > 0 ? "+" : ""}${fmtNum(v)} R`;
+const r = (v: number | null | undefined) => {
+  if (v === null || v === undefined) return "–";
+  if (Math.abs(v) < 0.005) return "0 R"; // anders "-0 R" door afronding
+  return `${v > 0 ? "+" : ""}${fmtNum(v)} R`;
+};
 
 const tone = (v: number | null | undefined) =>
   v === null || v === undefined ? "text-muted" : v > 0 ? "text-up" : v < 0 ? "text-down" : "";
