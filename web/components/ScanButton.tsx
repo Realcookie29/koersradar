@@ -28,9 +28,9 @@ export function ScanButton({ busy }: { busy: boolean }) {
           })
         }
         disabled={active}
-        className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition hover:brightness-110 disabled:cursor-wait disabled:opacity-70"
+        className="inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-on-accent transition hover:opacity-90 disabled:cursor-wait disabled:opacity-70"
       >
-        {active && <span className="size-3 animate-spin rounded-full border-2 border-white/40 border-t-white" />}
+        {active && <span className="size-3 animate-spin rounded-full border-2 border-on-accent/40 border-t-on-accent" />}
         {active ? "Scan loopt…" : "Scan nu"}
       </button>
       {message && <span className="text-xs text-muted">{message}</span>}

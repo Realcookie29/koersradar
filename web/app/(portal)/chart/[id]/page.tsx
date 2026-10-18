@@ -41,13 +41,13 @@ async function ChartContent(props: PageProps<"/chart/[id]">) {
   return (
     <>
       <div className="mt-2 mb-3 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">{ins.symbol}</h1>
-        <nav className="flex gap-1 rounded-lg border border-line bg-panel p-1">
+        <h1 className="animate-fade-slide-in-1 font-display text-4xl tracking-tight sm:text-5xl">{ins.symbol}</h1>
+        <nav className="flex gap-1 rounded-full border border-line bg-panel p-1">
           {INTERVALS.map((iv) => (
             <Link
               key={iv}
               href={`/chart/${ins.id}?iv=${iv}`}
-              className={`rounded-md px-3 py-1 text-sm ${iv === interval ? "bg-panel-2 text-text" : "text-muted hover:text-text"}`}
+              className={`rounded-full px-3.5 py-1 text-sm font-medium ${iv === interval ? "bg-panel-2 text-text" : "text-muted hover:text-text"}`}
             >
               {iv}
             </Link>
@@ -60,7 +60,7 @@ async function ChartContent(props: PageProps<"/chart/[id]">) {
           Experimentele bron (onofficieel, mogelijk vertraagd of onvolledig). Signalen alleen ter informatie.
         </p>
       )}
-      <div className="mt-4 rounded-xl border border-line bg-panel p-2">
+      <div className="mt-4 rounded-2xl border border-line bg-panel p-2">
         {candles.length ? (
           <Chart
             candles={candles}
@@ -74,7 +74,7 @@ async function ChartContent(props: PageProps<"/chart/[id]">) {
         {activeTrade ? (
           <SignalCard s={activeTrade} />
         ) : (
-          <div className="rounded-xl border border-line bg-panel p-4 text-sm">
+          <div className="rounded-2xl border border-line bg-panel p-4 text-sm">
             <h2 className="mb-1 text-xs font-medium uppercase tracking-wide text-muted">Laatste beoordeling</h2>
             <p>{signal ? (signal.no_trade_reason ?? "Kans verlopen") : "Nog niet gescand."}</p>
           </div>

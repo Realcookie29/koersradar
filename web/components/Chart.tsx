@@ -30,13 +30,13 @@ export function Chart({ candles, levels = null }: { candles: Candle[]; levels?: 
       autoSize: true,
       layout: {
         background: { type: ColorType.Solid, color: "transparent" },
-        textColor: dark ? "#8a97a8" : "#5b6676",
+        textColor: dark ? "#a1a1aa" : "#52525b",
         // Verplichte TradingView-attributie (Apache-2.0 NOTICE)
         attributionLogo: true,
       },
       grid: {
-        vertLines: { color: dark ? "#161e28" : "#eef1f5" },
-        horzLines: { color: dark ? "#161e28" : "#eef1f5" },
+        vertLines: { color: dark ? "#1c1c20" : "#e4e4e7" },
+        horzLines: { color: dark ? "#1c1c20" : "#e4e4e7" },
       },
       timeScale: { timeVisible: true, secondsVisible: false },
       localization: { locale: "nl-NL" },
@@ -57,7 +57,7 @@ export function Chart({ candles, levels = null }: { candles: Candle[]; levels?: 
     // Signaalniveaus van de actieve koopkans
     if (levels) {
       price.createPriceLine({ price: levels.target, color: "#22c55e", lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: "doel" });
-      price.createPriceLine({ price: levels.entry, color: "#4f8cff", lineWidth: 1, lineStyle: 0, axisLabelVisible: true, title: "instap" });
+      price.createPriceLine({ price: levels.entry, color: dark ? "#e4e4e7" : "#18181b", lineWidth: 1, lineStyle: 0, axisLabelVisible: true, title: "instap" });
       price.createPriceLine({ price: levels.stop, color: "#f05252", lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: "stop" });
     }
 

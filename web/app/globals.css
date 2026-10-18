@@ -1,31 +1,40 @@
 @import "tailwindcss";
 
-/* Koersradar: donker trading-thema, met lichte variant via prefers-color-scheme. */
+/* Koersradar: donker "glass"-thema (zink, glazen panelen, serif-koppen),
+   met lichte variant via prefers-color-scheme. */
 :root {
-  --bg: #0a0e13;
-  --panel: #10161e;
-  --panel-2: #151d27;
-  --line: #1f2935;
-  --text: #e6edf5;
-  --muted: #8a97a8;
+  --bg: #09090b;
+  --panel: rgb(255 255 255 / 0.04);
+  --panel-2: rgb(255 255 255 / 0.07);
+  --line: rgb(255 255 255 / 0.1);
+  --text: #fafafa;
+  --muted: #a1a1aa;
   --up: #22c55e;
   --down: #f05252;
   --warn: #f5a524;
-  --accent: #4f8cff;
+  --accent: #fafafa;
+  --on-accent: #09090b;
+  --glow-1: rgb(34 197 94 / 0.14);
+  --glow-2: rgb(99 102 241 / 0.16);
+  --glow-3: rgb(255 255 255 / 0.04);
 }
 
 @media (prefers-color-scheme: light) {
   :root {
-    --bg: #f5f7fa;
-    --panel: #ffffff;
-    --panel-2: #f0f3f7;
-    --line: #e1e6ed;
-    --text: #111827;
-    --muted: #5b6676;
+    --bg: #f4f4f5;
+    --panel: rgb(255 255 255 / 0.7);
+    --panel-2: rgb(9 9 11 / 0.05);
+    --line: rgb(9 9 11 / 0.1);
+    --text: #09090b;
+    --muted: #52525b;
     --up: #15803d;
     --down: #dc2626;
     --warn: #b45309;
-    --accent: #2563eb;
+    --accent: #18181b;
+    --on-accent: #fafafa;
+    --glow-1: rgb(34 197 94 / 0.12);
+    --glow-2: rgb(99 102 241 / 0.12);
+    --glow-3: rgb(255 255 255 / 0.6);
   }
 }
 
@@ -40,14 +49,50 @@
   --color-down: var(--down);
   --color-warn: var(--warn);
   --color-accent: var(--accent);
-  --font-sans: var(--font-geist-sans);
+  --color-on-accent: var(--on-accent);
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-instrument-serif);
+
+  --animate-fade-slide-in-1: fadeSlideIn 0.6s ease-out 0.05s both;
+  --animate-fade-slide-in-2: fadeSlideIn 0.6s ease-out 0.15s both;
+  --animate-fade-slide-in-3: fadeSlideIn 0.6s ease-out 0.25s both;
+  --animate-fade-slide-in-4: fadeSlideIn 0.6s ease-out 0.35s both;
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [class*="animate-fade-slide-in"] {
+    animation: none;
+  }
 }
 
 body {
-  background: var(--bg);
   color: var(--text);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-inter), system-ui, sans-serif;
+  background-color: var(--bg);
+  /* Zachte gloed in plaats van een achtergrondfoto */
+  background-image:
+    radial-gradient(60rem 40rem at 85% -10%, var(--glow-2), transparent 60%),
+    radial-gradient(50rem 35rem at -10% 10%, var(--glow-1), transparent 60%),
+    radial-gradient(40rem 30rem at 50% 110%, var(--glow-3), transparent 70%);
+  background-attachment: fixed;
+}
+
+/* Glazen panelen: alles wat de panel-kleur gebruikt krijgt blur */
+.bg-panel {
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
 }
 
 .num {

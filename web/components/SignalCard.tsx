@@ -11,7 +11,7 @@ const STRENGTH = {
 function Level({ label, value, entry, tone }: { label: string; value: number; entry: number; tone?: string }) {
   const diff = (value - entry) / entry;
   return (
-    <div className="rounded-lg bg-panel-2 px-3 py-2">
+    <div className="rounded-xl bg-panel-2 px-3 py-2">
       <div className="text-[11px] uppercase tracking-wide text-muted">{label}</div>
       <div className={`num text-sm font-medium ${tone ?? ""}`}>{fmtPrice(value)}</div>
       {label !== "Instap" && <div className={`num text-[11px] ${tone ?? "text-muted"}`}>{fmtPct(diff)}</div>}
@@ -22,7 +22,7 @@ function Level({ label, value, entry, tone }: { label: string; value: number; en
 export function SignalCard({ s }: { s: SignalRow }) {
   if (s.entry === null || s.stop_loss === null || s.target === null) return null;
   return (
-    <article className="flex flex-col gap-4 rounded-xl border border-line bg-panel p-4">
+    <article className="flex flex-col gap-4 rounded-2xl border border-line bg-panel p-4">
       <header className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Link href={`/chart/${s.instrument_id}?iv=${s.interval}`} className="text-lg font-semibold hover:underline">

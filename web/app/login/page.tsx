@@ -55,15 +55,18 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-sm flex-col justify-center gap-6 p-6">
+    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-8 p-6 text-center">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Koersradar</h1>
-        <p className="mt-1 text-sm text-muted">Daytrade-scanner voor de groep. Alleen op uitnodiging.</p>
+        <h1 className="animate-fade-slide-in-1 font-display text-5xl tracking-tight sm:text-6xl">Koersradar</h1>
+        <p className="animate-fade-slide-in-2 mt-3 text-base text-muted">Daytrade-scanner voor de groep. Alleen op uitnodiging.</p>
       </div>
       {state === "sent" ? (
-        <p>Check je mail voor de inloglink.</p>
+        <p className="animate-fade-slide-in-1 rounded-2xl bg-panel px-5 py-4 ring-1 ring-line">Check je mail voor de inloglink.</p>
       ) : (
-        <form onSubmit={onSubmit} className="flex flex-col gap-3">
+        <form
+          onSubmit={onSubmit}
+          className="animate-fade-slide-in-3 flex flex-col gap-3 rounded-2xl bg-panel p-5 text-left ring-1 ring-line"
+        >
           <label className="text-sm text-muted" htmlFor="email">
             E-mailadres
           </label>
@@ -73,12 +76,12 @@ export default function LoginPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="rounded-lg border border-line bg-panel px-3 py-2 outline-none focus:border-accent"
+            className="rounded-full bg-panel-2 px-4 py-2.5 ring-1 ring-line outline-none focus:ring-accent"
           />
           <button
             type="submit"
             disabled={state === "sending"}
-            className="rounded-lg bg-accent px-3 py-2 font-medium text-white transition hover:brightness-110 disabled:opacity-50"
+            className="mt-1 rounded-full bg-accent px-4 py-2.5 font-medium text-on-accent transition hover:opacity-90 disabled:opacity-50"
           >
             {state === "sending" ? "Versturen…" : "Stuur inloglink"}
           </button>
