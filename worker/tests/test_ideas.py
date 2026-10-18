@@ -69,3 +69,33 @@ def test_daily_values_wait_for_daily_close():
     # Tot en met het laatste uur van dag 1 is de slot van dag 1 nog niet bekend.
     assert full.iloc[:23].isna().all()
     assert full.iloc[23] == df["close"].iloc[23]
+
+
+def test_resample_builds_only_closed_candles():
+    df = random_market(24 * 3 + 5, seed=2)  # drie volle dagen en 5 uur van dag 4
+    day = ideas.resample(df, "1D")
+    assert len(day) == 3
+    first = df.iloc[:24]
+    row = day.iloc[0]
+    assert row["open"] == first["open"].iloc[0]
+    assert row["high"] == first["high"].max()
+    assert row["low"] == first["low"].min()
+    assert row["close"] == first["close"].iloc[-1]
+    assert row["volume"] == pytest.approx(first["volume"].sum())
+    assert len(ideas.resample(df.iloc[: 24 * 3], "1D")) == 3  # laatste dag net vol
+
+
+def test_resample_does_not_look_ahead():
+    df = random_market(24 * 30, seed=2)
+    full = ideas.resample(df, "4h")
+    part = ideas.resample(df.iloc[: 24 * 20 + 3], "4h")
+    _same(part, full.iloc[: len(part)])
+
+
+@pytest.mark.parametrize(("entry", "exit_"), [(20, 10), (55, 20)])
+def test_turtle_does_not_look_ahead(entry, exit_):
+    df = ideas.resample(random_market(24 * 200, seed=2), "4h")
+    full = ideas.turtle(df, COSTS, entry, exit_)
+    assert full["trade"].any()
+    for cut in (150, 600):
+        _same(ideas.turtle(df.iloc[:cut], COSTS, entry, exit_), full.iloc[:cut])
