@@ -83,7 +83,14 @@ export function SignalCard({ s }: { s: SignalRow }) {
         <span>
           Candle {fmtTime(s.last_candle_at)} · bron {s.data_source} · {s.strategy_version}
         </span>
-        <span className="text-warn">Ongetest: nog geen backtest</span>
+        <span className="flex items-center gap-3">
+          <Link href="/backtest" className="text-warn hover:underline">
+            Backtest: verliest na kosten
+          </Link>
+          <Link href={`/journaal?signal=${s.id}`} className="rounded-full border border-line px-2.5 py-1 text-text hover:bg-panel-2">
+            Paper trade
+          </Link>
+        </span>
       </footer>
     </article>
   );
