@@ -134,12 +134,15 @@ def run_symbol(
     return rows
 
 
-def _fmt(v: float | None, pct: bool = False, dec: int = 2) -> str:
+def _fmt(v: float | None, pct: bool = False, dec: int = 2, sign: bool = False) -> str:
+    """Getal voor de terminal; alleen ASCII, omdat de Windows-console anders tekens verminkt."""
     if v is None:
-        return "–"
+        return "-"
     if isinstance(v, float) and not np.isfinite(v):
-        return "∞"
-    return f"{v * 100:+.1f}%" if pct else f"{v:.{dec}f}"
+        return "inf"
+    if pct:
+        return f"{v * 100:+.1f}%" if sign else f"{v * 100:.1f}%"
+    return f"{v:+.{dec}f}" if sign else f"{v:.{dec}f}"
 
 
 def print_table(rows: list[dict], kinds: tuple[str, ...]) -> None:
@@ -154,14 +157,15 @@ def print_table(rows: list[dict], kinds: tuple[str, ...]) -> None:
             continue
         m, b = r["metrics"], r["benchmarks"]
         rnd = b.get("random_entry") or {}
-        period = f"{r['period_kind']} {r['period_start'][:10]} – {r['period_end'][:10]}"
+        period = f"{r['period_kind']} {r['period_start'][:10]} t/m {r['period_end'][:10]}"
         bh = b["buy_and_hold"]["return_pct"]
         print(
             f"{r['symbol']:10} {period:34} "
-            f"{m['trades']:>6} {_fmt(m['winrate'], True):>6} {_fmt(m['avg_r']):>7} "
-            f"{_fmt(m['profit_factor']):>5} {_fmt(m['return_pct'], True):>10} "
-            f"{_fmt(m['max_drawdown_pct'], True):>8} {_fmt(bh, True):>9} "
-            f"{_fmt(rnd.get('avg_r_median')):>9} {_fmt(m.get('beats_random_share'), True):>8}"
+            f"{m['trades']:>6} {_fmt(m['winrate'], True):>6} {_fmt(m['avg_r'], sign=True):>7} "
+            f"{_fmt(m['profit_factor']):>5} {_fmt(m['return_pct'], True, sign=True):>10} "
+            f"{_fmt(m['max_drawdown_pct'], True, sign=True):>8} {_fmt(bh, True, sign=True):>9} "
+            f"{_fmt(rnd.get('avg_r_median'), sign=True):>9} "
+            f"{_fmt(m.get('beats_random_share'), True):>8}"
         )
 
 
@@ -267,7 +271,7 @@ def main() -> None:
         if pool:
             print(
                 f"Alle instrumenten samen, {kind:5}: {pool['trades']} trades, "
-                f"winrate {_fmt(pool['winrate'], True)}, gem. R {_fmt(pool['avg_r'])}, "
+                f"winrate {_fmt(pool['winrate'], True)}, gem. R {_fmt(pool['avg_r'], sign=True)}, "
                 f"PF {_fmt(pool['profit_factor'])}"
             )
 
