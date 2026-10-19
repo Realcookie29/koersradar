@@ -3,6 +3,7 @@
 /* Koersradar: donker "glass"-thema (zink, glazen panelen, serif-koppen),
    met lichte variant via prefers-color-scheme. */
 :root {
+  color-scheme: dark; /* ook keuzelijsten, scrollbalken en datumvelden van de browser donker */
   --bg: #09090b;
   --panel: rgb(255 255 255 / 0.04);
   --panel-2: rgb(255 255 255 / 0.07);
@@ -21,6 +22,7 @@
 
 @media (prefers-color-scheme: light) {
   :root {
+    color-scheme: light;
     --bg: #f4f4f5;
     --panel: rgb(255 255 255 / 0.7);
     --panel-2: rgb(9 9 11 / 0.05);
