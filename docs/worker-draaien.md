@@ -55,6 +55,10 @@ Zet dit bestand **nooit** in git, en stuur het wachtwoord niet via chat of mail.
    sudo docker compose -f compose.server.yml logs -f --tail 50
    ```
    Na een paar minuten zie je regels als `scan BTC/USDT 1h: NO_TRADE ...` en `paper trading: {...}`. De eerste keer haalt hij 45 dagen historie op; dat duurt een paar minuten.
+8. Eenmalig, voor de 4-uurs- en daggrafieken in het portaal (400 dagen 1h-historie):
+   ```bash
+   sudo docker compose -f compose.server.yml run --rm worker python -m koersradar.ingest.history_db --days 400
+   ```
 
 **Gebruik niet de map die Synology Drive synchroniseert** (`D:\SynologyDrive\...`). De worker schrijft continu naar `data/`, en die wijzigingen gaan dan steeds heen en weer naar je pc.
 

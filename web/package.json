@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "node --test lib/journal.test.mjs lib/market.test.mjs"
+    "test": "node --test lib/journal.test.mjs lib/market.test.mjs lib/resample.test.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

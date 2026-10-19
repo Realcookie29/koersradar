@@ -103,6 +103,7 @@ uv venv && uv pip install -e ".[dev,aex]"     # of: python -m venv .venv && .ven
 uv run pytest
 uv run python -m koersradar.ingest.backfill --days 30   # alleen Parquet, geen DB nodig
 uv run python -m koersradar.ingest.run --days 45        # eerste keer: 45 dagen historie (nodig voor EMA 200 op 1h)
+uv run python -m koersradar.ingest.history_db --days 400 # eenmalig: 400 dagen 1h voor de 4h- en daggrafieken
 uv run python -m koersradar.scanner.run                 # één scan
 uv run python -m koersradar.ingest.scheduler            # elke 15 min ingest+scan, plus 'Scan nu'-aanvragen
 
