@@ -101,9 +101,3 @@ body {
   font-family: var(--font-geist-mono), ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
 }
-
-/* Opties van keuzelijsten: sommige browsers negeren color-scheme voor de lijst zelf. */
-select option {
-  background-color: var(--bg);
-  color: var(--text);
-}
