@@ -22,14 +22,39 @@ function Progress({ s }: { s: SignalRow }) {
   );
 }
 
-async function Scanner() {
+const MARKETS = [
+  { key: "alles", label: "Alles" },
+  { key: "crypto", label: "Crypto" },
+  { key: "aex", label: "Aandelen" },
+] as const;
+type MarketKey = (typeof MARKETS)[number]["key"];
+
+function MarketToggle({ active }: { active: MarketKey }) {
+  return (
+    <nav className="flex gap-1 rounded-full border border-line bg-panel p-1">
+      {MARKETS.map((m) => (
+        <Link
+          key={m.key}
+          href={m.key === "alles" ? "/" : `/?markt=${m.key}`}
+          className={`rounded-full px-3.5 py-1 text-sm font-medium ${m.key === active ? "bg-panel-2 text-text" : "text-muted hover:text-text"}`}
+        >
+          {m.label}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
+async function Scanner(props: PageProps<"/">) {
   await connection();
+  const sp = await props.searchParams;
+  const market: MarketKey = MARKETS.some((m) => m.key === sp.markt) ? (sp.markt as MarketKey) : "alles";
   const supabase = await createClient();
   const [{ data: latest }, { data: runs }] = await Promise.all([
     supabase.from("latest_signals").select("*").order("symbol"),
     supabase.from("scan_runs").select("*").order("requested_at", { ascending: false }).limit(1),
   ]);
-  const signals = (latest as SignalRow[] | null) ?? [];
+  const signals = ((latest as SignalRow[] | null) ?? []).filter((s) => market === "alles" || s.market === market);
   const run = (runs as ScanRun[] | null)?.[0];
   const now = new Date().getTime();
   const busy = run?.status === "pending" || run?.status === "running";
@@ -56,7 +81,10 @@ async function Scanner() {
             )}
           </p>
         </div>
-        <ScanButton busy={busy} />
+        <div className="flex flex-wrap items-center gap-3">
+          <MarketToggle active={market} />
+          <ScanButton busy={busy} />
+        </div>
       </header>
 
       <section className="mb-10">
@@ -122,11 +150,11 @@ async function Scanner() {
   );
 }
 
-export default function ScannerPage() {
+export default function ScannerPage(props: PageProps<"/">) {
   return (
     <div className="mx-auto max-w-6xl">
       <Suspense fallback={<p className="text-muted">Laden…</p>}>
-        <Scanner />
+        <Scanner {...props} />
       </Suspense>
       <p className="mt-10 text-xs leading-relaxed text-muted">
         Koersradar is beslisondersteuning voor eigen gebruik, geen beleggingsadvies. Signalen zijn berekend door
