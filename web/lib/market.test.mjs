@@ -49,3 +49,20 @@ test("rang op 7 dagen, zonder data geen rang", () => {
     [2, null, 1, 3],
   );
 });
+
+test("aandelen: 24 uur en 7 dagen in kalendertijd, ook met gaten buiten beursuren", () => {
+  // 9 candles per werkdag (09:00 t/m 17:00 UTC), 20 werkdagen vanaf maandag 7 sep 2026.
+  const out = [];
+  for (let d = 0; out.length < 20 * 9; d++) {
+    const day = new Date(Date.UTC(2026, 8, 7 + d));
+    if (day.getUTCDay() === 0 || day.getUTCDay() === 6) continue;
+    for (let h = 9; h <= 17; h++) out.push({ t: Date.UTC(2026, 8, 7 + d, h), c: 100 + out.length });
+  }
+  const b = out.map(({ t, c }) => ({ open_time: new Date(t).toISOString(), high: c, low: c, close: c }));
+  const o = overview(b);
+  const close = b.at(-1).close;
+  // 24 uur terug = hetzelfde klokuur op de vorige handelsdag: 9 candles terug.
+  assert.ok(Math.abs(o.change24h - (close / b.at(-10).close - 1)) < 1e-9);
+  // 7 dagen terug = 5 handelsdagen: 45 candles terug.
+  assert.ok(Math.abs(o.change7d - (close / b.at(-46).close - 1)) < 1e-9);
+});

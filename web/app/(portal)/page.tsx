@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { MarketToggle, marketFrom } from "@/components/MarketToggle";
 import { ScanButton } from "@/components/ScanButton";
 import { SignalCard } from "@/components/SignalCard";
 import { STEPS, isCurrent, stepsPassed } from "@/components/signals";
@@ -22,33 +23,12 @@ function Progress({ s }: { s: SignalRow }) {
   );
 }
 
-const MARKETS = [
-  { key: "alles", label: "Alles" },
-  { key: "crypto", label: "Crypto" },
-  { key: "aex", label: "Aandelen" },
-] as const;
-type MarketKey = (typeof MARKETS)[number]["key"];
-
-function MarketToggle({ active }: { active: MarketKey }) {
-  return (
-    <nav className="flex gap-1 rounded-full border border-line bg-panel p-1">
-      {MARKETS.map((m) => (
-        <Link
-          key={m.key}
-          href={m.key === "alles" ? "/" : `/?markt=${m.key}`}
-          className={`rounded-full px-3.5 py-1 text-sm font-medium ${m.key === active ? "bg-panel-2 text-text" : "text-muted hover:text-text"}`}
-        >
-          {m.label}
-        </Link>
-      ))}
-    </nav>
-  );
-}
+const SCANNER_MARKETS = ["alles", "crypto", "aex"] as const;
 
 async function Scanner(props: PageProps<"/">) {
   await connection();
   const sp = await props.searchParams;
-  const market: MarketKey = MARKETS.some((m) => m.key === sp.markt) ? (sp.markt as MarketKey) : "alles";
+  const market = marketFrom(sp.markt, SCANNER_MARKETS, "alles");
   const supabase = await createClient();
   const [{ data: latest }, { data: runs }] = await Promise.all([
     supabase.from("latest_signals").select("*").order("symbol"),
@@ -82,7 +62,7 @@ async function Scanner(props: PageProps<"/">) {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <MarketToggle active={market} />
+          <MarketToggle path="/" active={market} options={SCANNER_MARKETS} fallback="alles" />
           <ScanButton busy={busy} />
         </div>
       </header>

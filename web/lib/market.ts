@@ -19,6 +19,8 @@ export type Overview = {
   trendUp: boolean | null;
 };
 
+// In uren kalendertijd, niet in aantal candles: aandelen hebben alleen candles tijdens beursuren.
+const HOUR = 3600_000;
 const H24 = 24;
 const D7 = 7 * 24;
 const D20 = 20 * 24;
@@ -30,11 +32,20 @@ export function overview(bars: Bar[]): Overview | null {
   const n = bars.length;
   if (!n) return null;
   const close = bars[n - 1].close;
-  const back = (k: number) => (n > k ? close / bars[n - 1 - k].close - 1 : null);
-  const highsBefore = (k: number) => (n > k ? maxOf(bars.slice(n - 1 - k, n - 1).map((b) => b.high)) : null);
-  const prev24 = highsBefore(H24);
-  const prev20d = highsBefore(D20);
-  const window = bars.slice(-D20);
+  const last = Date.parse(bars[n - 1].open_time);
+  /** Laatste candle die minstens `hours` uur voor de laatste ligt; null als de historie te kort is. */
+  const at = (hours: number) => {
+    const cutoff = last - hours * HOUR;
+    for (let i = n - 2; i >= 0; i--) if (Date.parse(bars[i].open_time) <= cutoff) return i;
+    return null;
+  };
+  const i24 = at(H24);
+  const i20 = at(D20);
+  const back = (i: number | null) => (i === null ? null : close / bars[i].close - 1);
+  const highsBefore = (i: number | null) => (i === null ? null : maxOf(bars.slice(i, n - 1).map((b) => b.high)));
+  const prev24 = highsBefore(i24);
+  const prev20d = highsBefore(i20);
+  const window = bars.slice(i20 === null ? 0 : i20 + 1);
   const hi = maxOf(window.map((b) => b.high));
   const lo = minOf(window.map((b) => b.low));
   const closes = bars.map((b) => b.close);
@@ -42,11 +53,11 @@ export function overview(bars: Bar[]): Overview | null {
   const e200 = ema(closes, 200).at(-1) ?? null;
   return {
     close,
-    change24h: back(H24),
-    change7d: back(D7),
+    change24h: back(i24),
+    change7d: back(at(D7)),
     breakout24h: prev24 !== null && close > prev24,
     breakout20d: prev20d !== null && close > prev20d,
-    rangePos20d: n >= D20 && hi > lo ? (close - lo) / (hi - lo) : null,
+    rangePos20d: i20 !== null && hi > lo ? (close - lo) / (hi - lo) : null,
     trendUp: e50 !== null && e200 !== null ? e50 > e200 : null,
   };
 }

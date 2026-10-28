@@ -24,7 +24,7 @@ function Tag({ children, tone }: { children: React.ReactNode; tone: "up" | "warn
   return <span className={`whitespace-nowrap rounded px-1.5 py-0.5 text-[11px] font-medium ${cls}`}>{children}</span>;
 }
 
-export async function MarketOverview() {
+export async function MarketOverview({ market }: { market: "crypto" | "aex" }) {
   // Request-time rendering: Supabase-auth en de koersen veranderen per kwartier.
   await connection();
   const supabase = await createClient();
@@ -32,6 +32,7 @@ export async function MarketOverview() {
     .from("instruments")
     .select("id, symbol, market, source, experimental")
     .eq("active", true)
+    .eq("market", market)
     .order("symbol");
   const list = (instruments as Instrument[] | null) ?? [];
   const rows = await Promise.all(
@@ -55,8 +56,7 @@ export async function MarketOverview() {
     return <p className="text-sm text-muted">Nog geen koersdata. Die verschijnt zodra de worker draait.</p>;
   }
 
-  const crypto = ranked.filter((r) => r.ins.market === "crypto" && r.rank !== null);
-  const strongest = crypto.slice(0, 3);
+  const strongest = ranked.filter((r) => r.rank !== null).slice(0, 3);
   const breaking = ranked.filter((r) => r.o!.breakout20d || r.o!.breakout24h);
 
   return (
@@ -139,7 +139,7 @@ export async function MarketOverview() {
         </table>
       </div>
       <p className="text-xs text-muted">
-        Op basis van gesloten 1h-candles. Dit is informatie, geen koopadvies: in onze backtests leverde geen van deze
+        Op basis van gesloten 1h-candles.{market === "aex" && " Aandelen handelen alleen tijdens beursuren; 24 uur en 7 dagen zijn kalendertijd, dus op maandag vergelijk je met vrijdag."} Dit is informatie, geen koopadvies: in onze backtests leverde geen van deze
         kenmerken op zichzelf winst op na kosten, ook breakouts niet. Rang = sterkste over 7 dagen.
       </p>
     </div>

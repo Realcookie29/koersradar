@@ -3,15 +3,19 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { FreshnessBadge } from "@/components/FreshnessBadge";
 import { MarketOverview } from "@/components/MarketOverview";
+import { MarketToggle, marketFrom } from "@/components/MarketToggle";
 import { createClient } from "@/lib/supabase/server";
 import type { DataStatus, Instrument } from "@/lib/types";
 
-async function InstrumentList() {
+const MARKT_OPTIONS = ["crypto", "aex"] as const;
+type MarktKey = (typeof MARKT_OPTIONS)[number];
+
+async function InstrumentList({ market }: { market: MarktKey }) {
   // Request-time rendering: Supabase-auth en de data-leeftijd gebruiken de klok.
   await connection();
   const supabase = await createClient();
   const [{ data: instruments }, { data: statuses }] = await Promise.all([
-    supabase.from("instruments").select("id, symbol, market, source, experimental").eq("active", true).order("market").order("symbol"),
+    supabase.from("instruments").select("id, symbol, market, source, experimental").eq("active", true).eq("market", market).order("symbol"),
     supabase.from("data_status").select("*"),
   ]);
   const byKey = new Map((statuses as DataStatus[] | null)?.map((s) => [`${s.instrument_id}:${s.interval}`, s]));
@@ -56,22 +60,38 @@ async function InstrumentList() {
   );
 }
 
-export default function MarktenPage() {
+async function Markets(props: PageProps<"/markten">) {
+  await connection();
+  const sp = await props.searchParams;
+  const market = marketFrom(sp.markt, MARKT_OPTIONS, "crypto");
+  return (
+    <>
+      <div className="mb-6">
+        <MarketToggle path="/markten" active={market} options={MARKT_OPTIONS} fallback="crypto" />
+      </div>
+      <section className="mb-10">
+        <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted">Marktoverzicht</h2>
+        <Suspense fallback={<p className="text-muted">Laden…</p>}>
+          <MarketOverview market={market} />
+        </Suspense>
+      </section>
+      <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted">Databronnen en versheid</h2>
+      <Suspense fallback={<p className="text-muted">Laden…</p>}>
+        <InstrumentList market={market} />
+      </Suspense>
+    </>
+  );
+}
+
+export default function MarktenPage(props: PageProps<"/markten">) {
   return (
     <div className="mx-auto max-w-5xl">
       <header className="mb-6">
         <h1 className="animate-fade-slide-in-1 font-display text-4xl tracking-tight sm:text-5xl">Markten</h1>
         <p className="mt-1 text-sm text-muted">Hoe de markt ervoor staat, en hoe vers de data per instrument is.</p>
       </header>
-      <section className="mb-10">
-        <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted">Marktoverzicht</h2>
-        <Suspense fallback={<p className="text-muted">Laden…</p>}>
-          <MarketOverview />
-        </Suspense>
-      </section>
-      <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted">Databronnen en versheid</h2>
       <Suspense fallback={<p className="text-muted">Laden…</p>}>
-        <InstrumentList />
+        <Markets {...props} />
       </Suspense>
     </div>
   );
