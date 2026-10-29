@@ -8,7 +8,7 @@ crypto:
   fallback: coinbase
   quote: USDT          # Coinbase gebruikt USD; de adapter vertaalt dit
   intervals: [15m, 1h]
-  symbols: [BTC, ETH, SOL, BNB, XRP, ADA, AVAX, LINK, DOGE, DOT]
+  symbols: [BTC, ETH, SOL, BNB, XRP, ADA, AVAX, LINK, DOGE, DOT, HYPE]  # HYPE: op Binance sinds 24-09-2026, dus korte historie
 
 aex:
   source: yfinance
