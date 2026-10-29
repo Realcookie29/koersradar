@@ -6,34 +6,64 @@ import { Chart } from "@/components/Chart";
 import { FreshnessBadge } from "@/components/FreshnessBadge";
 import { SignalCard } from "@/components/SignalCard";
 import { isCurrent } from "@/components/signals";
+import { BUCKET_HOURS, type BigInterval, resample } from "@/lib/resample";
 import { createClient } from "@/lib/supabase/server";
 import { INTERVALS, type Candle, type DataStatus, type Interval, type SignalRow } from "@/lib/types";
 
 const MAX_CANDLES = 1000;
+const PAGE = 1000; // Supabase geeft maximaal 1000 rijen per verzoek
+const CHART_INTERVALS = [...INTERVALS, "4h", "1d"] as const;
+type ChartInterval = (typeof CHART_INTERVALS)[number];
+const isBig = (iv: ChartInterval): iv is BigInterval => iv in BUCKET_HOURS;
+
+type Supabase = Awaited<ReturnType<typeof createClient>>;
+
+/** 1h-candles (oud naar nieuw) voor `bars` grote candles, in pagina's van 1000 rijen. */
+async function hourly(supabase: Supabase, instrumentId: number, bars: number, hoursPerBar: number) {
+  const pages = Math.ceil((bars * hoursPerBar) / PAGE);
+  const res = await Promise.all(
+    Array.from({ length: pages }, (_, p) =>
+      supabase
+        .from("candles")
+        .select("open_time, open, high, low, close, volume")
+        .eq("instrument_id", instrumentId)
+        .eq("interval", "1h")
+        .order("open_time", { ascending: false })
+        .range(p * PAGE, p * PAGE + PAGE - 1),
+    ),
+  );
+  return res.flatMap((r) => (r.data as Candle[] | null) ?? []).reverse();
+}
 
 async function ChartContent(props: PageProps<"/chart/[id]">) {
   // Request-time rendering: Supabase-auth en de data-leeftijd gebruiken de klok.
   await connection();
   const { id } = await props.params;
   const sp = await props.searchParams;
-  const interval: Interval = INTERVALS.includes(sp.iv as Interval) ? (sp.iv as Interval) : "1h";
+  const interval: ChartInterval = CHART_INTERVALS.includes(sp.iv as ChartInterval) ? (sp.iv as ChartInterval) : "1h";
+  // 4h en 1d maken we uit 1h; versheid en signalen horen dan bij 1h.
+  const base: Interval = isBig(interval) ? "1h" : interval;
 
   const supabase = await createClient();
   const { data: ins } = await supabase.from("instruments").select("id, symbol, experimental").eq("id", id).maybeSingle();
   if (!ins) notFound();
 
-  const [{ data: rows }, { data: status }, { data: sig }] = await Promise.all([
-    supabase
-      .from("candles")
-      .select("open_time, open, high, low, close, volume")
-      .eq("instrument_id", ins.id)
-      .eq("interval", interval)
-      .order("open_time", { ascending: false })
-      .limit(MAX_CANDLES),
-    supabase.from("data_status").select("*").eq("instrument_id", ins.id).eq("interval", interval).maybeSingle(),
-    supabase.from("latest_signals").select("*").eq("instrument_id", ins.id).eq("interval", interval).maybeSingle(),
+  const [raw, { data: status }, { data: sig }] = await Promise.all([
+    isBig(interval)
+      ? hourly(supabase, ins.id, interval === "1d" ? 400 : 600, BUCKET_HOURS[interval])
+      : supabase
+          .from("candles")
+          .select("open_time, open, high, low, close, volume")
+          .eq("instrument_id", ins.id)
+          .eq("interval", interval)
+          .order("open_time", { ascending: false })
+          .limit(MAX_CANDLES)
+          .then(({ data }) => ((data as Candle[] | null) ?? []).reverse()),
+    supabase.from("data_status").select("*").eq("instrument_id", ins.id).eq("interval", base).maybeSingle(),
+    supabase.from("latest_signals").select("*").eq("instrument_id", ins.id).eq("interval", base).maybeSingle(),
   ]);
-  const candles = ((rows as Candle[] | null) ?? []).reverse();
+  const big = isBig(interval) ? resample(raw, interval) : null;
+  const candles = big ? big.bars : raw;
   const now = new Date().getTime();
   const signal = sig as SignalRow | null;
   const activeTrade = signal?.decision === "TRADE" && isCurrent(signal, now) ? signal : null;
@@ -43,7 +73,7 @@ async function ChartContent(props: PageProps<"/chart/[id]">) {
       <div className="mt-2 mb-3 flex flex-wrap items-center justify-between gap-3">
         <h1 className="animate-fade-slide-in-1 font-display text-4xl tracking-tight sm:text-5xl">{ins.symbol}</h1>
         <nav className="flex gap-1 rounded-full border border-line bg-panel p-1">
-          {INTERVALS.map((iv) => (
+          {CHART_INTERVALS.map((iv) => (
             <Link
               key={iv}
               href={`/chart/${ins.id}?iv=${iv}`}
@@ -75,13 +105,22 @@ async function ChartContent(props: PageProps<"/chart/[id]">) {
           <SignalCard s={activeTrade} />
         ) : (
           <div className="rounded-2xl border border-line bg-panel p-4 text-sm">
-            <h2 className="mb-1 text-xs font-medium uppercase tracking-wide text-muted">Laatste beoordeling</h2>
+            <h2 className="mb-1 text-xs font-medium uppercase tracking-wide text-muted">
+              Laatste beoordeling{big ? " (scanner op 1h)" : ""}
+            </h2>
             <p>{signal ? (signal.no_trade_reason ?? "Kans verlopen") : "Nog niet gescand."}</p>
           </div>
         )}
       </div>
       <p className="mt-3 text-xs text-muted">
         EMA/RSI in de grafiek zijn alleen weergave; signalen komen uit de worker (gecontroleerde Python-code).
+        {big && (
+          <>
+            {" "}
+            {interval === "1d" ? "Dagcandles" : "4-uurscandles"} zijn gemaakt uit 1h-candles (UTC).
+            {!big.lastClosed && " De laatste candle loopt nog en kan nog veranderen."}
+          </>
+        )}
       </p>
     </>
   );

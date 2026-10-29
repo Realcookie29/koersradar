@@ -1,0 +1,20 @@
+# Worker op een server (Synology NAS, VPS of een pc die altijd aanstaat) tegen de online Supabase.
+# Zie docs/worker-draaien.md.  Starten:  docker compose -f compose.server.yml up -d --build
+# Voor lokale ontwikkeling tegen de Supabase CLI: docker-compose.yml.
+services:
+  worker:
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+    env_file: .env # DATABASE_URL, ANTHROPIC_API_KEY, ... (nooit in git)
+    environment:
+      DATA_DIR: /data
+      TZ: Europe/Amsterdam # alleen voor de tijden in de logs; de worker rekent in UTC
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

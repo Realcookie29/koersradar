@@ -10,7 +10,7 @@ const NOW = [
   {
     title: "Markten",
     href: "/markten",
-    text: "Per instrument hoe vers de data is: welke bron, wanneer de laatste candle was en of er iets ontbreekt.",
+    text: "Welke munten deze week het sterkst zijn, welke net uitbreken boven de high van 24 uur of 20 dagen, en waar de koers staat in de band van 20 dagen. Daaronder per instrument hoe vers de data is.",
   },
   {
     title: "Grafiek",

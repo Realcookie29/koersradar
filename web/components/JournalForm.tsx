@@ -81,7 +81,7 @@ export function JournalForm({ instruments, prefill }: { instruments: InstrumentO
             className="rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm"
           >
             {instruments.map((i) => (
-              <option key={i.id} value={i.id}>
+              <option key={i.id} value={i.id} className="bg-bg text-text">
                 {i.symbol}
               </option>
             ))}
